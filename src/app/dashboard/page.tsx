@@ -37,7 +37,26 @@ export default function Dashboard() {
                 RU<span className="text-red-400">Friends</span>
               </h1>
               <span className="text-white/40">•</span>
-              <span className="text-white/60">Dashboard</span>
+              <button
+                onClick={() => router.push(`/dashboard/`)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                Dashboard
+              </button>
+              <span className="text-white/40">•</span>
+              <button
+                onClick={() => router.push(`/profile/${user.id}`)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                Profile
+              </button>
+              <span className="text-white/40">•</span>
+              <button
+                onClick={() => router.push(`/settings/`)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                Settings
+              </button>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-white/80 text-sm">
