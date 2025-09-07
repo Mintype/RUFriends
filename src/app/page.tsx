@@ -3,8 +3,10 @@
 import { supabase } from './lib/supabase';
 import { useAuth } from './lib/auth-context';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { User } from '@supabase/supabase-js';
 
-const handleJoinClick = async (user: any, router: any) => {
+const handleJoinClick = async (user: User | null, router: ReturnType<typeof useRouter>) => {
   // If user is already authenticated, go to dashboard
   if (user) {
     router.push('/dashboard');
@@ -12,7 +14,7 @@ const handleJoinClick = async (user: any, router: any) => {
   }
 
   // Otherwise, start Google authentication
-  const { data, error } = await supabase.auth.signInWithOAuth({
+  const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
       redirectTo: `${window.location.origin}/dashboard`, // Redirect after successful login
@@ -36,9 +38,9 @@ export default function Home() {
       {/* Floating Navigation */}
       <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white/10 backdrop-blur-md rounded-full border border-white/20 px-6 py-3">
         <div className="flex items-center space-x-8">
-          <a href="/" className="text-xl font-bold text-white hover:text-red-400 transition-colors">
+          <Link href="/" className="text-xl font-bold text-white hover:text-red-400 transition-colors">
             RU<span className="text-red-400">Friends</span>
-          </a>
+          </Link>
           <div className="hidden md:flex space-x-6">
             <a href="#about" className="text-white/80 hover:text-white transition-colors text-sm">About</a>
             <a href="#features" className="text-white/80 hover:text-white transition-colors text-sm">Features</a>
@@ -169,7 +171,7 @@ export default function Home() {
               Unforgettable?
             </h2>
             <p className="text-xl text-white/70 mb-10 max-w-2xl mx-auto">
-              Join the growing community of Rutgers students who've discovered their perfect study partners and lifelong friends.
+              Join the growing community of Rutgers students who&apos;ve discovered their perfect study partners and lifelong friends.
             </p>
             <button 
               onClick={() => handleJoinClick(user, router)}
