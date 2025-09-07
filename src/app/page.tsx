@@ -151,7 +151,7 @@ export default function Home() {
             </div>
             <div className="flex space-x-8 text-sm">
               <a 
-                href="https://github.com/your-username/rufriends" 
+                href="https://github.com/Mintype/RUFriends" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="inline-flex items-center space-x-2 text-white/60 hover:text-red-400 transition-all duration-300 hover:scale-105"
