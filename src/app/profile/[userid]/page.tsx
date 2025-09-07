@@ -38,51 +38,51 @@ export default function UserProfile() {
   const isOwnProfile = user?.id === userId;
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('is_active', true)
+          .single();
+
+        if (error) {
+          console.error('Error fetching profile:', error);
+          setNotFound(true);
+          return;
+        }
+
+        if (data) {
+          setProfile({
+            id: data.id,
+            display_name: data.display_name,
+            bio: data.bio || '',
+            major: data.major || '',
+            graduation_year: data.graduation_year,
+            campus: data.campus || '',
+            classes: data.classes || [],
+            interests: data.interests || [],
+            social_links: data.social_links || {},
+            created_at: data.created_at
+          });
+        } else {
+          setNotFound(true);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        setNotFound(true);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (!authLoading && !user) {
       router.push('/');
     } else if (user && userId) {
       fetchProfile();
     }
   }, [user, authLoading, userId, router]);
-
-  const fetchProfile = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .single();
-
-      if (error) {
-        console.error('Error fetching profile:', error);
-        setNotFound(true);
-        return;
-      }
-
-      if (data) {
-        setProfile({
-          id: data.id,
-          display_name: data.display_name,
-          bio: data.bio || '',
-          major: data.major || '',
-          graduation_year: data.graduation_year,
-          campus: data.campus || '',
-          classes: data.classes || [],
-          interests: data.interests || [],
-          social_links: data.social_links || {},
-          created_at: data.created_at
-        });
-      } else {
-        setNotFound(true);
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setNotFound(true);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const copyToClipboard = (text: string, type: string) => {
     navigator.clipboard.writeText(text).then(() => {
@@ -127,7 +127,7 @@ export default function UserProfile() {
         <div className="text-center">
           <div className="text-white text-6xl mb-4">😔</div>
           <div className="text-white text-2xl mb-2">Profile Not Found</div>
-          <div className="text-white/60 mb-6">This user doesn't have a profile yet or it doesn't exist.</div>
+          <div className="text-white/60 mb-6">This user doesn&apos;t have a profile yet or it doesn&apos;t exist.</div>
           <button
             onClick={() => router.push('/dashboard')}
             className="px-6 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
