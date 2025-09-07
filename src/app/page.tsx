@@ -1,4 +1,36 @@
+'use client';
+
+import { supabase } from './lib/supabase';
+import { useAuth } from './lib/auth-context';
+import { useRouter } from 'next/navigation';
+
+const handleJoinClick = async (user: any, router: any) => {
+  // If user is already authenticated, go to dashboard
+  if (user) {
+    router.push('/dashboard');
+    return;
+  }
+
+  // Otherwise, start Google authentication
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/dashboard`, // Redirect after successful login
+      queryParams: {
+        hd: 'rutgers.edu' // Restrict to Rutgers domain
+      }
+    }
+  });
+
+  if (error) {
+    console.error('Error signing in with Google:', error);
+    alert('Error signing in with Google. Please try again.');
+  }
+};
+
 export default function Home() {
+  const { user } = useAuth();
+  const router = useRouter();
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
       {/* Floating Navigation */}
@@ -12,8 +44,11 @@ export default function Home() {
             <a href="#features" className="text-white/80 hover:text-white transition-colors text-sm">Features</a>
             <a href="#contact" className="text-white/80 hover:text-white transition-colors text-sm">Contact</a>
           </div>
-          <button className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-600 transition-colors">
-            Join Now
+          <button 
+            onClick={() => handleJoinClick(user, router)}
+            className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-600 transition-colors"
+          >
+            {user ? 'Go to Dashboard' : 'Join Now'}
           </button>
         </div>
       </nav>
@@ -52,10 +87,13 @@ export default function Home() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
-              <button className="group bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-red-500/25">
+              <button 
+                onClick={() => handleJoinClick(user, router)}
+                className="group bg-red-500 hover:bg-red-600 text-white px-8 py-4 rounded-2xl text-lg font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-red-500/25"
+              >
                 <span className="flex items-center gap-2">
                   <span>🚀</span>
-                  Get Started Free
+                  {user ? 'Go to Dashboard' : 'Get Started Free'}
                 </span>
               </button>
             </div>
@@ -133,8 +171,11 @@ export default function Home() {
             <p className="text-xl text-white/70 mb-10 max-w-2xl mx-auto">
               Join the growing community of Rutgers students who've discovered their perfect study partners and lifelong friends.
             </p>
-            <button className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-12 py-5 rounded-2xl text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-red-500/30">
-              Start Your Journey Today 🎓
+            <button 
+              onClick={() => handleJoinClick(user, router)}
+              className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-12 py-5 rounded-2xl text-xl font-bold transition-all duration-300 transform hover:scale-105 shadow-2xl hover:shadow-red-500/30"
+            >
+              {user ? 'Go to Dashboard 🎓' : 'Start Your Journey Today 🎓'}
             </button>
           </div>
         </div>
