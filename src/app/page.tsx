@@ -42,7 +42,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
       {/* Floating Navigation */}
       <nav className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-white/10 backdrop-blur-md rounded-full border border-white/20 px-6 py-3">
-        <div className="flex items-center space-x-8">
+        <div className="flex items-center justify-center md:justify-between md:space-x-8">
           <Link href="/" className="text-xl font-bold text-white hover:text-red-400 transition-colors">
             RU<span className="text-red-400">Friends</span>
           </Link>
@@ -53,7 +53,7 @@ export default function Home() {
           </div>
           <button 
             onClick={() => handleJoinClick(user, router)}
-            className="bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-600 transition-colors"
+            className="hidden md:block bg-red-500 text-white px-4 py-2 rounded-full text-sm font-medium hover:bg-red-600 transition-colors"
           >
             {user ? 'Go to Dashboard' : 'Join Now'}
           </button>
@@ -100,7 +100,7 @@ export default function Home() {
               >
                 <span className="flex items-center gap-2">
                   <span>🚀</span>
-                  {user ? 'Go to Dashboard' : 'Get Started Free'}
+                  {user ? 'Go to Dashboard' : 'Get Started'}
                 </span>
               </button>
             </div>
@@ -353,6 +353,12 @@ export default function Home() {
               <span className="text-white/60 text-sm">Connecting Scarlet Knights since 2025</span>
             </div>
             <div className="flex space-x-8 text-sm">
+              {/* <Link 
+                href="/privacy"
+                className="text-white/60 hover:text-red-400 transition-colors"
+              >
+                Privacy Policy
+              </Link> */}
               <a 
                 href="https://github.com/Mintype/RUFriends" 
                 target="_blank" 
