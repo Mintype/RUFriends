@@ -280,7 +280,7 @@ export default function Browse() {
       <main className="flex-1 max-w-7xl mx-auto px-6 py-8 w-full">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">Browse Friends</h1>
+          <h1 className="text-4xl font-bold text-white mb-2">Find Friends</h1>
           <p className="text-white/70">Discover and connect with fellow Rutgers students</p>
         </div>
 
