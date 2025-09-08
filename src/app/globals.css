@@ -2,6 +2,7 @@
 
 html {
   scroll-behavior: smooth;
+  overflow-y: scroll; /* Force vertical scrollbar to always be visible */
 }
 
 :root {
