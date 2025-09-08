@@ -80,9 +80,16 @@ export default function Dashboard() {
               <span className="text-white/40">•</span>
               <button
                 onClick={() => router.push(`/dashboard/`)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white font-medium"
               >
                 Dashboard
+              </button>
+              <span className="text-white/40">•</span>
+              <button
+                onClick={() => router.push(`/find-friends`)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                Find Friends
               </button>
               <span className="text-white/40">•</span>
               <button
@@ -139,10 +146,10 @@ export default function Dashboard() {
               <h3 className="text-white font-semibold">Complete Profile</h3>
               <p className="text-white/60 text-sm">Add your courses and interests</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer" onClick={() => router.push('/browse')}>
               <div className="text-2xl mb-2">👥</div>
-              <h3 className="text-white font-semibold">Find Study Partners</h3>
-              <p className="text-white/60 text-sm">Connect with classmates</p>
+              <h3 className="text-white font-semibold">Browse Friends</h3>
+              <p className="text-white/60 text-sm">Discover fellow Rutgers students</p>
             </div>
             <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
               <div className="text-2xl mb-2">🌐</div>
@@ -215,16 +222,38 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Recent Activity */}
+          {/* Browse Friends */}
           <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10">
-            {/* <h3 className="text-2xl font-bold text-white mb-6">Recent Activity</h3> */}
-            <div className="space-y-4">
-              <div className="text-center py-12">
-                <div className="text-6xl mb-4">🌟</div>
-                <h4 className="text-xl font-semibold text-white mb-2">Welcome to RUFriends!</h4>
-                <p className="text-white/60">
-                  Start by completing your profile to find study partners and make connections.
+            <h3 className="text-2xl font-bold text-white mb-6">Find Your Study Partners</h3>
+            <div className="space-y-6">
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">👥</div>
+                <h4 className="text-xl font-semibold text-white mb-2">Connect with Fellow Scarlet Knights</h4>
+                <p className="text-white/60 mb-6">
+                  Discover students in your classes, major, or with similar interests. Start building your study network today!
                 </p>
+                <button 
+                  onClick={() => router.push('/browse')}
+                  className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300 transform hover:scale-105"
+                >
+                  Browse Friends
+                </button>
+              </div>
+
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">500+</div>
+                  <div className="text-white/60 text-sm">Active Students</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">50+</div>
+                  <div className="text-white/60 text-sm">Different Majors</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-white">3</div>
+                  <div className="text-white/60 text-sm">Campuses</div>
+                </div>
               </div>
             </div>
           </div>

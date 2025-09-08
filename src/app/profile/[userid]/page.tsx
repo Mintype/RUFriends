@@ -173,6 +173,13 @@ export default function UserProfile() {
               </button>
               <span className="text-white/40">•</span>
               <button
+                onClick={() => router.push(`/find-friends`)}
+                className="text-white/60 hover:text-white transition-colors"
+              >
+                Find Friends
+              </button>
+              <span className="text-white/40">•</span>
+              <button
                 onClick={() => router.push(`/profile/${user.id}`)}
                 className="text-white/60 hover:text-white transition-colors"
               >
