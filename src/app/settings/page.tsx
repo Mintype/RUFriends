@@ -140,7 +140,6 @@ export default function Settings() {
     try {
       const profileData = {
         user_id: user.id,
-        email: user.email,
         display_name: profile.display_name,
         bio: profile.bio,
         major: profile.major,
