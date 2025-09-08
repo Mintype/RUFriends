@@ -152,7 +152,7 @@ export default function UserProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 flex flex-col">
       {/* Navigation */}
       <nav className="bg-black/20 backdrop-blur-md border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 py-4">
@@ -202,7 +202,7 @@ export default function UserProfile() {
       </nav>
 
       {/* Profile Content */}
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="flex-1 max-w-4xl mx-auto px-6 py-8 w-full">
         {profile && (
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
             {/* Profile Header */}
