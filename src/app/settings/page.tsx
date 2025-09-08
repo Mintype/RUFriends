@@ -350,11 +350,11 @@ export default function Settings() {
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white"
                 >
                   <option value="" className="bg-slate-800 text-white">Select Campus</option>
-                  <option value="College Ave - New Brunswick" className="bg-slate-800 text-white">College Ave - New Brunswick</option>
-                  <option value="Busch - New Brunswick" className="bg-slate-800 text-white">Busch - New Brunswick</option>
-                  <option value="Livingston - New Brunswick" className="bg-slate-800 text-white">Livingston - New Brunswick</option>
-                  <option value="Douglass - New Brunswick" className="bg-slate-800 text-white">Douglass - New Brunswick</option>
-                  <option value="Cook - New Brunswick" className="bg-slate-800 text-white">Cook - New Brunswick</option>
+                  <option value="College Ave" className="bg-slate-800 text-white">College Ave</option>
+                  <option value="Busch" className="bg-slate-800 text-white">Busch</option>
+                  <option value="Livingston" className="bg-slate-800 text-white">Livingston</option>
+                  <option value="Douglass" className="bg-slate-800 text-white">Douglass</option>
+                  <option value="Cook" className="bg-slate-800 text-white">Cook</option>
                   <option value="Newark" className="bg-slate-800 text-white">Newark</option>
                   <option value="Camden" className="bg-slate-800 text-white">Camden</option>
                 </select>
