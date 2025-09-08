@@ -47,8 +47,8 @@ export default function Home() {
             RU<span className="text-red-400">Friends</span>
           </Link>
           <div className="hidden md:flex space-x-6">
-            <a href="#about" className="text-white/80 hover:text-white transition-colors text-sm">About</a>
             <a href="#features" className="text-white/80 hover:text-white transition-colors text-sm">Features</a>
+            <a href="#about" className="text-white/80 hover:text-white transition-colors text-sm">About</a>
             <a href="#contact" className="text-white/80 hover:text-white transition-colors text-sm">Contact</a>
           </div>
           <button 
@@ -137,7 +137,7 @@ export default function Home() {
 
             <div className="grid md:grid-cols-3 gap-8">
               <div className="group bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:transform hover:scale-105">
-                <div className="text-6xl mb-6">�</div>
+                <div className="text-6xl mb-6">🏫</div>
                 <h3 className="text-2xl font-bold text-white mb-4">Campus Focused</h3>
                 <p className="text-white/70 leading-relaxed">
                   Connect exclusively with verified Rutgers students across all campuses! New Brunswick, Newark, and Camden.
@@ -158,6 +158,161 @@ export default function Home() {
                 <p className="text-white/70 leading-relaxed">
                   University email verification, moderated communities, and privacy controls keep your experience safe.
                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* About Section */}
+        <div id="about" className="relative py-20">
+          <div className="max-w-6xl mx-auto px-6">
+            <div className="grid lg:grid-cols-2 gap-16 items-center">
+              <div>
+                <div className="inline-block bg-red-500/20 text-red-300 px-4 py-2 rounded-full text-sm font-medium border border-red-500/30 mb-6">
+                  🎓 About RUFriends
+                </div>
+                <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+                  Built By Students,
+                  <br />
+                  <span className="text-red-400">For Students</span>
+                </h2>
+                <div className="space-y-4 text-white/70 text-lg leading-relaxed">
+                  <p>
+                    RUFriends was created by Rutgers students who understood the challenge of connecting with like-minded peers in a large university environment. We believe that meaningful relationships and academic success go hand in hand.
+                  </p>
+                  <p>
+                    Our platform is designed exclusively for the Rutgers community, ensuring that every connection you make is with a fellow Scarlet Knight who shares your academic journey and campus experience.
+                  </p>
+                  <p>
+                    Whether you're looking for study partners, project collaborators, or lifelong friends, RUFriends provides the tools and community to make those connections happen naturally and safely.
+                  </p>
+                </div>
+                <div className="mt-8 grid grid-cols-2 gap-6">
+                  <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                    <div className="text-3xl font-bold text-red-400">100%</div>
+                    <div className="text-white/60">Rutgers Students</div>
+                  </div>
+                  <div className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10">
+                    <div className="text-3xl font-bold text-red-400">24/7</div>
+                    <div className="text-white/60">Safe Environment</div>
+                  </div>
+                </div>
+              </div>
+              <div className="relative">
+                <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+                  <div className="text-center space-y-6">
+                    <div className="w-20 h-20 bg-gradient-to-r from-red-500 to-red-600 rounded-full mx-auto flex items-center justify-center">
+                      <span className="text-3xl">🏛️</span>
+                    </div>
+                    <h3 className="text-2xl font-bold text-white">The Rutgers Difference</h3>
+                    <div className="space-y-4 text-white/70">
+                      <div className="flex items-center space-x-3">
+                        <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                        <span>Verified @rutgers.edu email required</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                        <span>All three campuses supported</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                        <span>Find study buddies in your classes</span>
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <span className="w-2 h-2 bg-red-400 rounded-full"></span>
+                        <span>Connect with students in your major</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Contact Section */}
+        <div id="contact" className="relative bg-white/5 backdrop-blur-sm border-t border-white/10 py-20">
+          <div className="max-w-4xl mx-auto px-6">
+            <div className="text-center mb-16">
+              <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
+                Get In <span className="text-red-400">Touch</span>
+              </h2>
+              <p className="text-white/70 text-lg max-w-2xl mx-auto">
+                Have questions, suggestions, or want to contribute? We'd love to hear from the Rutgers community.
+              </p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-12">
+              <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                    <span className="text-xl">💬</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">General Inquiries</h3>
+                    <p className="text-white/60">Questions about the platform</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <a 
+                    href="mailto:mintype.code@gmail.com" 
+                    className="flex items-center space-x-3 text-white/70 hover:text-red-400 transition-colors"
+                  >
+                    <span>📧</span>
+                    <span>mintype.code@gmail.com</span>
+                  </a>
+                  <div className="flex items-center space-x-3 text-white/70">
+                    <span>⏰</span>
+                    <span>We typically respond within 24 hours</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border border-white/20">
+                <div className="flex items-center space-x-4 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                    <span className="text-xl">🛠️</span>
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">Technical Support</h3>
+                    <p className="text-white/60">Bug reports and technical issues</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <a 
+                    href="https://github.com/Mintype/RUFriends/issues" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center space-x-3 text-white/70 hover:text-red-400 transition-colors"
+                  >
+                    <span>🐛</span>
+                    <span>Report an Issue on GitHub</span>
+                  </a>
+                  <div className="flex items-center space-x-3 text-white/70">
+                    <span>🔄</span>
+                    <span>Open source contributions welcome</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 backdrop-blur-md rounded-3xl p-8 border border-red-500/30 text-center">
+              <h3 className="text-2xl font-bold text-white mb-4">Want to Contribute?</h3>
+              <p className="text-white/70 mb-6 max-w-2xl mx-auto">
+                RUFriends is an open-source project built by and for the Rutgers community. Whether you're a developer, designer, or just have great ideas, we welcome your contributions!
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <a 
+                  href="https://github.com/Mintype/RUFriends" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center space-x-2 bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl transition-all duration-300 hover:scale-105"
+                >
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+                  </svg>
+                  <span>View on GitHub</span>
+                </a>
               </div>
             </div>
           </div>
