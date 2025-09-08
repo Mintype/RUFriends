@@ -284,28 +284,41 @@ export default function UserProfile() {
         {profile && (
           <div className="bg-white/10 backdrop-blur-md rounded-xl border border-white/20 overflow-hidden">
             {/* Profile Header */}
-            <div className="p-8 border-b border-white/10">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="text-4xl font-bold text-white mb-2">{profile.display_name}</h1>
-                  <div className="flex items-center space-x-4 text-white/60">
+            <div className="p-4 sm:p-8 border-b border-white/10">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-4">
+                <div className="mb-4 sm:mb-0">
+                  <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">{profile.display_name}</h1>
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-white/60">
                     {profile.major && <span>{profile.major}</span>}
                     {profile.graduation_year && (
                       <>
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <span>Class of {profile.graduation_year}</span>
                       </>
                     )}
                     {profile.campus && (
                       <>
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <span>{profile.campus}</span>
                       </>
                     )}
                   </div>
                 </div>
-                <div className="text-white/40 text-sm">
-                  Joined {new Date(profile.created_at).toLocaleDateString()}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => router.push('/settings')}
+                      className="inline-flex items-center justify-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium text-sm"
+                    >
+                      <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      Edit Profile
+                    </button>
+                  )}
+                  <div className="text-white/40 text-sm sm:text-right">
+                    Joined {new Date(profile.created_at).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
               {profile.bio && (
