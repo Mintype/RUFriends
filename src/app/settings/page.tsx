@@ -350,7 +350,7 @@ export default function Settings() {
                   className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white"
                 >
                   <option value="" className="bg-slate-800 text-white">Select Campus</option>
-                  <option value="College Ave" className="bg-slate-800 text-white">College Ave</option>
+                  <option value="College Avenue" className="bg-slate-800 text-white">College Avenue</option>
                   <option value="Busch" className="bg-slate-800 text-white">Busch</option>
                   <option value="Livingston" className="bg-slate-800 text-white">Livingston</option>
                   <option value="Douglass" className="bg-slate-800 text-white">Douglass</option>
