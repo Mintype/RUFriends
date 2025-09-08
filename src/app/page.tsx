@@ -13,11 +13,16 @@ const handleJoinClick = async (user: User | null, router: ReturnType<typeof useR
     return;
   }
 
+  // Get the correct origin URL
+  const origin = typeof window !== 'undefined' 
+    ? window.location.origin 
+    : process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+
   // Otherwise, start Google authentication
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${window.location.origin}/dashboard`, // Redirect after successful login
+      redirectTo: `${origin}/dashboard`, // Use the determined origin
       queryParams: {
         hd: 'rutgers.edu' // Restrict to Rutgers domain
       }
