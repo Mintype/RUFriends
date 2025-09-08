@@ -196,11 +196,11 @@ export default function Dashboard() {
       <main className="flex-1 max-w-6xl mx-auto px-6 py-12 w-full">
         {/* Welcome Section */}
         <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 mb-8">
-          <div className="flex items-center space-x-4 mb-6">
+          <div className="flex items-center space-x-4 mb-6 sm:justify-start justify-center">
             <div className="hidden sm:flex w-16 h-16 bg-red-500/20 rounded-full items-center justify-center">
               <span className="text-2xl">👋</span>
             </div>
-            <div>
+            <div className="text-center sm:text-left">
               <h2 className="text-3xl font-bold text-white">
                 Welcome to RUFriends!
               </h2>
