@@ -217,9 +217,9 @@ export default function Dashboard() {
               <h3 className="text-white font-semibold">Complete Profile</h3>
               <p className="text-white/60 text-sm">Add your courses and interests</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer" onClick={() => router.push('/browse')}>
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer" onClick={() => router.push('/find-friends')}>
               <div className="text-2xl mb-2">👥</div>
-              <h3 className="text-white font-semibold">Browse Friends</h3>
+              <h3 className="text-white font-semibold">Find Friends</h3>
               <p className="text-white/60 text-sm">Discover fellow Rutgers students</p>
             </div>
             <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
@@ -293,7 +293,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Browse Friends */}
+          {/* Find Friends */}
           <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10">
             <h3 className="text-2xl font-bold text-white mb-6">Find Your Study Partners</h3>
             <div className="space-y-6">
@@ -304,15 +304,15 @@ export default function Dashboard() {
                   Discover students in your classes, major, or with similar interests. Start building your study network today!
                 </p>
                 <button 
-                  onClick={() => router.push('/browse')}
+                  onClick={() => router.push('/find-friends')}
                   className="bg-red-500 hover:bg-red-600 text-white px-8 py-3 rounded-xl text-lg font-semibold transition-all duration-300 transform hover:scale-105"
                 >
-                  Browse Friends
+                  Find Friends
                 </button>
               </div>
 
               {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10">
+              {/* <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/10">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-white">500+</div>
                   <div className="text-white/60 text-sm">Active Students</div>
@@ -325,7 +325,7 @@ export default function Dashboard() {
                   <div className="text-2xl font-bold text-white">3</div>
                   <div className="text-white/60 text-sm">Campuses</div>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
