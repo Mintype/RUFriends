@@ -197,7 +197,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 mb-8">
           <div className="flex items-center space-x-4 mb-6">
-            <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center">
+            <div className="hidden sm:flex w-16 h-16 bg-red-500/20 rounded-full items-center justify-center">
               <span className="text-2xl">👋</span>
             </div>
             <div>
