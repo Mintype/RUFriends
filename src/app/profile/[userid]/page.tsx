@@ -33,6 +33,7 @@ export default function UserProfile() {
   
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const isOwnProfile = user?.id === userId;
@@ -154,48 +155,49 @@ export default function UserProfile() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 flex flex-col">
       {/* Navigation */}
-      <nav className="bg-black/20 backdrop-blur-md border-b border-white/10">
-        <div className="max-w-6xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => router.push('/')}
-                className="text-2xl font-bold text-white transition-colors group"
-              >
-                <span className="group-hover:text-red-400 transition-colors">RU</span><span className="text-red-400">Friends</span>
-              </button>
-              <span className="text-white/40">•</span>
+      <nav className="bg-black/20 backdrop-blur-md border-b border-white/10 sticky top-0 z-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <button
+              onClick={() => router.push('/')}
+              className="text-xl sm:text-2xl font-bold text-white transition-colors group flex-shrink-0"
+            >
+              <span className="group-hover:text-red-400 transition-colors">RU</span><span className="text-red-400">Friends</span>
+            </button>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1">
               <button
                 onClick={() => router.push(`/dashboard/`)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Dashboard
               </button>
-              <span className="text-white/40">•</span>
               <button
                 onClick={() => router.push(`/find-friends`)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Find Friends
               </button>
-              <span className="text-white/40">•</span>
               <button
                 onClick={() => router.push(`/profile/${user.id}`)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white font-medium px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Profile
               </button>
-              <span className="text-white/40">•</span>
               <button
                 onClick={() => router.push(`/settings/`)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Settings
               </button>
             </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-white/80 text-sm">
-                Welcome, {user.user_metadata?.full_name || user.email}
+
+            {/* Desktop User Info & Sign Out */}
+            <div className="hidden md:flex items-center space-x-4">
+              <div className="text-white/80 text-sm max-w-48 truncate">
+                {user.user_metadata?.full_name || user.email}
               </div>
               <button
                 onClick={signOut}
@@ -204,7 +206,76 @@ export default function UserProfile() {
                 Sign Out
               </button>
             </div>
+
+            {/* Mobile menu button */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {mobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
           </div>
+
+          {/* Mobile Navigation Menu */}
+          {mobileMenuOpen && (
+            <div className="md:hidden border-t border-white/10 py-4 space-y-2">
+              <button
+                onClick={() => {
+                  router.push(`/dashboard/`);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => {
+                  router.push(`/find-friends`);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Find Friends
+              </button>
+              <button
+                onClick={() => {
+                  router.push(`/profile/${user.id}`);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-white font-medium px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Profile
+              </button>
+              <button
+                onClick={() => {
+                  router.push(`/settings/`);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Settings
+              </button>
+              
+              {/* Mobile User Info */}
+              <div className="border-t border-white/10 pt-4 mt-4">
+                <div className="px-4 py-2 text-white/80 text-sm">
+                  {user.user_metadata?.full_name || user.email}
+                </div>
+                <button
+                  onClick={signOut}
+                  className="w-full mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 
