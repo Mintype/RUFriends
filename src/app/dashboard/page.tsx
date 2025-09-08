@@ -2,17 +2,55 @@
 
 import { useAuth } from '../lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '../lib/supabase';
+
+interface Profile {
+  classes: string[];
+  interests: string[];
+  campus: string;
+  major: string;
+}
 
 export default function Dashboard() {
   const { user, loading, signOut } = useAuth();
   const router = useRouter();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/');
+    } else if (user) {
+      fetchProfile();
     }
   }, [user, loading, router]);
+
+  const fetchProfile = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('classes, interests, campus, major')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .single();
+
+      if (data) {
+        setProfile({
+          classes: data.classes || [],
+          interests: data.interests || [],
+          campus: data.campus || '',
+          major: data.major || ''
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setProfileLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -27,7 +65,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 flex flex-col">
       {/* Navigation */}
       <nav className="bg-black/20 backdrop-blur-md border-b border-white/10">
         <div className="max-w-6xl mx-auto px-6 py-4">
@@ -77,7 +115,7 @@ export default function Dashboard() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-6xl mx-auto px-6 py-12">
+      <main className="flex-1 max-w-6xl mx-auto px-6 py-12 w-full">
         {/* Welcome Section */}
         <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10 mb-8">
           <div className="flex items-center space-x-4 mb-6">
@@ -125,27 +163,54 @@ export default function Dashboard() {
                   <span className="text-xl">📚</span>
                   <span className="text-white">Add Your Courses</span>
                 </div>
-                <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                  Add
-                </button>
+                {!profileLoading && profile?.classes && profile.classes.length > 0 ? (
+                  <div className="flex items-center space-x-2 bg-green-500/20 border border-green-400/30 text-green-300 px-4 py-2 rounded-lg text-sm">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span>Added</span>
+                  </div>
+                ) : (
+                  <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    Add
+                  </button>
+                )}
               </div>
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                 <div className="flex items-center space-x-3">
                   <span className="text-xl">🎯</span>
                   <span className="text-white">Set Your Interests</span>
                 </div>
-                <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                  Add
-                </button>
+                {!profileLoading && profile?.interests && profile.interests.length > 0 ? (
+                  <div className="flex items-center space-x-2 bg-green-500/20 border border-green-400/30 text-green-300 px-4 py-2 rounded-lg text-sm">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span>Added</span>
+                  </div>
+                ) : (
+                  <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    Add
+                  </button>
+                )}
               </div>
               <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl">
                 <div className="flex items-center space-x-3">
                   <span className="text-xl">🏫</span>
                   <span className="text-white">Select Your Campus</span>
                 </div>
-                <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                  Add
-                </button>
+                {!profileLoading && profile?.campus && profile.campus.trim() !== '' ? (
+                  <div className="flex items-center space-x-2 bg-green-500/20 border border-green-400/30 text-green-300 px-4 py-2 rounded-lg text-sm">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                    </svg>
+                    <span>Added</span>
+                  </div>
+                ) : (
+                  <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                    Add
+                  </button>
+                )}
               </div>
             </div>
           </div>
