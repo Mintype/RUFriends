@@ -107,9 +107,9 @@ export default function Dashboard() {
               <p className="text-white/60 text-sm">Connect with classmates</p>
             </div>
             <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-              <div className="text-2xl mb-2">💬</div>
-              <h3 className="text-white font-semibold">Join Groups</h3>
-              <p className="text-white/60 text-sm">Participate in discussions</p>
+              <div className="text-2xl mb-2">🌐</div>
+              <h3 className="text-white font-semibold">Connect & Network</h3>
+              <p className="text-white/60 text-sm">Build meaningful connections</p>
             </div>
           </div>
         </div>
@@ -125,7 +125,7 @@ export default function Dashboard() {
                   <span className="text-xl">📚</span>
                   <span className="text-white">Add Your Courses</span>
                 </div>
-                <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
                   Add
                 </button>
               </div>
@@ -134,7 +134,7 @@ export default function Dashboard() {
                   <span className="text-xl">🎯</span>
                   <span className="text-white">Set Your Interests</span>
                 </div>
-                <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
                   Add
                 </button>
               </div>
@@ -143,8 +143,8 @@ export default function Dashboard() {
                   <span className="text-xl">🏫</span>
                   <span className="text-white">Select Your Campus</span>
                 </div>
-                <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                  Select
+                <button onClick={() => router.push(`/settings/`)} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                  Add
                 </button>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function Dashboard() {
 
           {/* Recent Activity */}
           <div className="bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10">
-            <h3 className="text-2xl font-bold text-white mb-6">Recent Activity</h3>
+            {/* <h3 className="text-2xl font-bold text-white mb-6">Recent Activity</h3> */}
             <div className="space-y-4">
               <div className="text-center py-12">
                 <div className="text-6xl mb-4">🌟</div>
@@ -166,7 +166,7 @@ export default function Dashboard() {
         </div>
 
         {/* Study Groups Preview */}
-        <div className="mt-8 bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10">
+        {/* <div className="mt-8 bg-white/5 backdrop-blur-md rounded-3xl p-8 border border-white/10">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-white">Popular Study Groups</h3>
             <button className="text-red-400 hover:text-red-300 font-medium transition-colors">
@@ -220,7 +220,7 @@ export default function Dashboard() {
               </p>
             </div>
           </div>
-        </div>
+        </div> */}
       </main>
       {/* Footer */}
       <footer className="border-t border-white/10 bg-black/20 backdrop-blur-sm">
