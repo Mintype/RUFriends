@@ -148,7 +148,7 @@ export default function Home() {
                 <div className="text-6xl mb-6">📚</div>
                 <h3 className="text-2xl font-bold text-white mb-4">Smart Matching</h3>
                 <p className="text-white/70 leading-relaxed">
-                  Intelligent matching based on your courses, interests, and study preferences for perfect study partnerships.
+                  Matching based on your courses, interests, and study preferences for perfect study partnerships.
                 </p>
               </div>
 
