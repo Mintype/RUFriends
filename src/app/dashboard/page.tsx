@@ -2,7 +2,7 @@
 
 import { useAuth } from '../lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface Profile {
@@ -19,19 +19,11 @@ export default function Dashboard() {
   const [profileLoading, setProfileLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/');
-    } else if (user) {
-      fetchProfile();
-    }
-  }, [user, loading, router]);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     if (!user) return;
     
     try {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from('profiles')
         .select('classes, interests, campus, major')
         .eq('user_id', user.id)
@@ -51,7 +43,15 @@ export default function Dashboard() {
     } finally {
       setProfileLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/');
+    } else if (user) {
+      fetchProfile();
+    }
+  }, [user, loading, router, fetchProfile]);
 
   if (loading) {
     return (

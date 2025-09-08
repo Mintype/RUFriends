@@ -184,7 +184,7 @@ export default function Home() {
                     Our platform is designed exclusively for the Rutgers community, ensuring that every connection you make is with a fellow Scarlet Knight who shares your academic journey and campus experience.
                   </p>
                   <p>
-                    Whether you're looking for study partners, project collaborators, or lifelong friends, RUFriends provides the tools and community to make those connections happen naturally and safely.
+                    Whether you&apos;re looking for study partners, project collaborators, or lifelong friends, RUFriends provides the tools and community to make those connections happen naturally and safely.
                   </p>
                 </div>
                 <div className="mt-8 grid grid-cols-2 gap-6">
@@ -238,7 +238,7 @@ export default function Home() {
                 Get In <span className="text-red-400">Touch</span>
               </h2>
               <p className="text-white/70 text-lg max-w-2xl mx-auto">
-                Have questions, suggestions, or want to contribute? We'd love to hear from the Rutgers community.
+                Have questions, suggestions, or want to contribute? We&apos;d love to hear from the Rutgers community.
               </p>
             </div>
 
@@ -299,7 +299,7 @@ export default function Home() {
             <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 backdrop-blur-md rounded-3xl p-8 border border-red-500/30 text-center">
               <h3 className="text-2xl font-bold text-white mb-4">Want to Contribute?</h3>
               <p className="text-white/70 mb-6 max-w-2xl mx-auto">
-                RUFriends is an open-source project built by and for the Rutgers community. Whether you're a developer, designer, or just have great ideas, we welcome your contributions!
+                RUFriends is an open-source project built by and for the Rutgers community. Whether you&apos;re a developer, designer, or just have great ideas, we welcome your contributions!
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a 
