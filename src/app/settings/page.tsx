@@ -227,9 +227,12 @@ export default function Settings() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-bold text-white">
-                RU<span className="text-red-400">Friends</span>
-              </h1>
+              <button
+                onClick={() => router.push('/')}
+                className="text-2xl font-bold text-white transition-colors group"
+              >
+                <span className="group-hover:text-red-400 transition-colors">RU</span><span className="text-red-400">Friends</span>
+              </button>
               <span className="text-white/40">•</span>
               <button
                 onClick={() => router.push(`/dashboard/`)}

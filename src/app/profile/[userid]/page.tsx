@@ -84,10 +84,22 @@ export default function UserProfile() {
     }
   }, [user, authLoading, userId, router]);
 
-  const copyToClipboard = (text: string, type: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      alert(`${type} copied to clipboard!`);
-    });
+  const copyToClipboard = async (text: string, type: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      // Create a temporary toast notification
+      const toast = document.createElement('div');
+      toast.className = 'fixed top-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300';
+      toast.textContent = `${type} copied!`;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => document.body.removeChild(toast), 300);
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy:', err);
+    }
   };
 
   const formatSocialLink = (platform: string, value: string) => {
@@ -146,9 +158,12 @@ export default function UserProfile() {
         <div className="max-w-6xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <h1 className="text-2xl font-bold text-white">
-                RU<span className="text-red-400">Friends</span>
-              </h1>
+              <button
+                onClick={() => router.push('/')}
+                className="text-2xl font-bold text-white transition-colors group"
+              >
+                <span className="group-hover:text-red-400 transition-colors">RU</span><span className="text-red-400">Friends</span>
+              </button>
               <span className="text-white/40">•</span>
               <button
                 onClick={() => router.push(`/dashboard/`)}
@@ -259,47 +274,49 @@ export default function UserProfile() {
             {/* Social Links */}
             {Object.keys(profile.social_links).some(key => profile.social_links[key as keyof typeof profile.social_links]) && (
               <div className="p-8 border-t border-white/10">
-                <h3 className="text-xl font-semibold text-white mb-4">Connect with {isOwnProfile ? 'Me' : profile.display_name}</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <h3 className="text-xl font-semibold text-white mb-6 flex items-center">
+                  <span className="w-2 h-2 bg-red-400 rounded-full mr-3"></span>
+                  Connect with {isOwnProfile ? 'Me' : profile.display_name}
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {Object.entries(profile.social_links).map(([platform, value]) => {
                     if (!value) return null;
                     
-                    const platformIcons: { [key: string]: string } = {
-                      instagram: '📷',
-                      snapchat: '👻',
-                      discord: '🎮',
-                      phone: '📱',
-                      email: '📧',
-                      twitter: '🐦'
+                    const platformData: { [key: string]: { icon: string; name: string; color: string } } = {
+                      instagram: { icon: '📸', name: 'Instagram', color: 'from-pink-500 to-purple-600' },
+                      snapchat: { icon: '👻', name: 'Snapchat', color: 'from-yellow-400 to-yellow-500' },
+                      discord: { icon: '💬', name: 'Discord', color: 'from-indigo-500 to-purple-600' },
+                      phone: { icon: '📱', name: 'Phone', color: 'from-green-500 to-green-600' },
+                      email: { icon: '📧', name: 'Email', color: 'from-blue-500 to-blue-600' },
+                      twitter: { icon: '🐦', name: 'Twitter', color: 'from-sky-400 to-blue-500' }
                     };
 
-                    const platformNames: { [key: string]: string } = {
-                      instagram: 'Instagram',
-                      snapchat: 'Snapchat',
-                      discord: 'Discord',
-                      phone: 'Phone',
-                      email: 'Email',
-                      twitter: 'Twitter'
-                    };
+                    const data = platformData[platform];
+                    if (!data) return null;
 
                     return (
                       <button
                         key={platform}
-                        onClick={() => copyToClipboard(value, platformNames[platform])}
-                        className="flex items-center space-x-3 p-4 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg transition-colors group"
+                        onClick={() => copyToClipboard(value, data.name)}
+                        className="group relative flex items-center p-4 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all duration-200 hover:scale-[1.02]"
                       >
-                        <span className="text-2xl">{platformIcons[platform]}</span>
-                        <div className="text-left flex-1">
-                          <div className="text-white/60 text-xs font-medium uppercase tracking-wide">
-                            {platformNames[platform]}
+                        <div className={`w-10 h-10 bg-gradient-to-r ${data.color} rounded-lg flex items-center justify-center mr-4 group-hover:scale-110 transition-transform duration-200`}>
+                          <span className="text-white text-lg">{data.icon}</span>
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="text-white/70 text-xs font-medium uppercase tracking-wider">
+                            {data.name}
                           </div>
-                          <div className="text-white font-medium">
+                          <div className="text-white font-medium text-sm">
                             {formatSocialLink(platform, value)}
                           </div>
                         </div>
-                        <div className="text-white/40 group-hover:text-white/60 text-sm">
-                          Click to copy
+                        <div className="opacity-0 group-hover:opacity-100 text-white/50 text-xs transition-opacity duration-200">
+                          Copy
                         </div>
+                        
+                        {/* Subtle hover effect overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 rounded-xl transition-opacity duration-300"></div>
                       </button>
                     );
                   })}
@@ -309,21 +326,26 @@ export default function UserProfile() {
 
             {/* Empty State for Social Links */}
             {!Object.keys(profile.social_links).some(key => profile.social_links[key as keyof typeof profile.social_links]) && (
-              <div className="p-8 border-t border-white/10 text-center">
-                <div className="text-white/40 text-lg mb-2">📱</div>
-                <div className="text-white/60">
-                  {isOwnProfile 
-                    ? "You haven't added any contact information yet." 
-                    : `${profile.display_name} hasn't added any contact information yet.`}
+              <div className="p-8 border-t border-white/10">
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">📱</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-white mb-2">No Contact Information</h3>
+                  <p className="text-white/60 mb-4">
+                    {isOwnProfile 
+                      ? "Add your social links to let people connect with you!" 
+                      : `${profile.display_name} hasn't shared any contact information yet.`}
+                  </p>
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => router.push('/settings')}
+                      className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors font-medium"
+                    >
+                      Add Contact Info
+                    </button>
+                  )}
                 </div>
-                {isOwnProfile && (
-                  <button
-                    onClick={() => router.push('/profile')}
-                    className="mt-4 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
-                  >
-                    Add Contact Info
-                  </button>
-                )}
               </div>
             )}
           </div>
