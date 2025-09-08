@@ -28,7 +28,7 @@ interface FilterState {
 }
 
 export default function Browse() {
-  const { user, loading } = useAuth();
+  const { user, loading, signOut } = useAuth();
   const router = useRouter();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
@@ -205,9 +205,17 @@ export default function Browse() {
               </button>
             </div>
 
-            {/* Desktop User Info */}
-            <div className="hidden md:block text-white/80 text-sm max-w-48 truncate">
-              {user.user_metadata?.full_name || user.email}
+            {/* Desktop User Info & Sign Out */}
+            <div className="hidden md:flex items-center space-x-4">
+              <div className="text-white/80 text-sm max-w-48 truncate">
+                {user.user_metadata?.full_name || user.email}
+              </div>
+              <button
+                onClick={signOut}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Sign Out
+              </button>
             </div>
 
             {/* Mobile menu button */}
