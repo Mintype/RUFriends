@@ -2,7 +2,7 @@
 
 import { useAuth } from '../lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface Profile {
@@ -34,6 +34,10 @@ export default function Browse() {
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const profilesPerPage = 12; // Limit profiles per page
   const [filters, setFilters] = useState<FilterState>({
     searchTerm: '',
     campus: '',
@@ -46,19 +50,28 @@ export default function Browse() {
     if (!loading && !user) {
       router.push('/');
     } else if (user) {
-      fetchProfiles();
+      fetchProfiles(true); // Reset to first page
     }
   }, [user, loading, router]);
 
   useEffect(() => {
-    applyFilters();
-  }, [profiles, filters]);
+    // Reset to first page when filters change
+    setCurrentPage(1);
+    fetchProfiles(true);
+  }, [filters]);
 
-  const fetchProfiles = async () => {
+  const fetchProfiles = async (resetPage: boolean = false) => {
     if (!user) return;
     
+    const page = resetPage ? 1 : currentPage;
+    const from = (page - 1) * profilesPerPage;
+    const to = from + profilesPerPage - 1;
+    
     try {
-      const { data, error } = await supabase
+      setProfilesLoading(true);
+      
+      // Build query with server-side filtering
+      let query = supabase
         .from('profiles')
         .select(`
           id,
@@ -72,17 +85,66 @@ export default function Browse() {
           interests,
           social_links,
           created_at
-        `)
+        `, { count: 'exact' }) // Get total count for pagination
         .eq('is_active', true)
-        .neq('user_id', user.id) // Exclude current user
+        .neq('user_id', user.id); // Exclude current user
+
+      // Apply server-side filters
+      if (filters.searchTerm) {
+        // Use full-text search or ilike for partial matches
+        query = query.or(`display_name.ilike.%${filters.searchTerm}%,bio.ilike.%${filters.searchTerm}%,major.ilike.%${filters.searchTerm}%`);
+      }
+      
+      if (filters.campus) {
+        query = query.ilike('campus', `%${filters.campus}%`);
+      }
+      
+      if (filters.major) {
+        query = query.ilike('major', `%${filters.major}%`);
+      }
+      
+      if (filters.graduationYear) {
+        query = query.eq('graduation_year', parseInt(filters.graduationYear));
+      }
+
+      // Interests filter - using PostgreSQL array operations
+      if (filters.interests) {
+        const interestTerms = filters.interests.toLowerCase().split(/[,\s]+/).filter(term => term.trim());
+        if (interestTerms.length > 0) {
+          // Use array overlap operator to check if any interests match
+          const interestConditions = interestTerms.map(term => 
+            `interests.cs.{${term}}`
+          ).join(',');
+          query = query.or(interestConditions);
+        }
+      }
+
+      // Apply pagination and ordering
+      query = query
+        .range(from, to)
         .order('created_at', { ascending: false });
+
+      const { data, error, count } = await query;
+
+      console.log('Fetched profiles:', data, 'Count:', count);
 
       if (error) {
         console.error('Error fetching profiles:', error);
         return;
       }
 
-      setProfiles(data || []);
+      if (resetPage) {
+        setProfiles(data || []);
+        setCurrentPage(1);
+      } else {
+        // Append for pagination (if implementing infinite scroll later)
+        setProfiles(prev => [...prev, ...(data || [])]);
+      }
+      
+      setTotalCount(count || 0);
+      setHasMore((data?.length || 0) === profilesPerPage);
+      setFilteredProfiles(data || []); // Since filtering is done server-side
+      
     } catch (error) {
       console.error('Error fetching profiles:', error);
     } finally {
@@ -90,65 +152,33 @@ export default function Browse() {
     }
   };
 
-  const applyFilters = () => {
-    let filtered = [...profiles];
-
-    // Search term filter
-    if (filters.searchTerm) {
-      const searchLower = filters.searchTerm.toLowerCase();
-      filtered = filtered.filter(profile => 
-        profile.display_name.toLowerCase().includes(searchLower) ||
-        profile.bio?.toLowerCase().includes(searchLower) ||
-        profile.major?.toLowerCase().includes(searchLower) ||
-        profile.classes?.some(cls => cls.toLowerCase().includes(searchLower)) ||
-        profile.interests?.some(interest => interest.toLowerCase().includes(searchLower))
-      );
-    }
-
-    // Campus filter
-    if (filters.campus) {
-      filtered = filtered.filter(profile => 
-        profile.campus?.toLowerCase().includes(filters.campus.toLowerCase())
-      );
-    }
-
-    // Major filter
-    if (filters.major) {
-      filtered = filtered.filter(profile => 
-        profile.major?.toLowerCase().includes(filters.major.toLowerCase())
-      );
-    }
-
-    // Graduation year filter
-    if (filters.graduationYear) {
-      const yearStr = filters.graduationYear.toLowerCase();
-      filtered = filtered.filter(profile => 
-        profile.graduation_year?.toString().includes(yearStr)
-      );
-    }
-
-    // Interests filter - now supports typing to match interests
-    if (filters.interests) {
-      const interestTerms = filters.interests.toLowerCase().split(/[,\s]+/).filter(term => term.trim());
-      if (interestTerms.length > 0) {
-        filtered = filtered.filter(profile => 
-          profile.interests?.some(interest => 
-            interestTerms.some(term =>
-              interest.toLowerCase().includes(term)
-            )
-          )
-        );
-      }
-    }
-
-    setFilteredProfiles(filtered);
-  };
+  // Debounce filter changes to avoid too many API calls
+  const debouncedFetchProfiles = useCallback(
+    useMemo(() => {
+      let timeoutId: NodeJS.Timeout;
+      return () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          fetchProfiles(true);
+        }, 300); // 300ms delay
+      };
+    }, []), 
+    []
+  );
 
   const handleFilterChange = (key: keyof FilterState, value: string) => {
     setFilters(prev => ({
       ...prev,
       [key]: value
     }));
+    // Don't call debouncedFetchProfiles here - it's handled by useEffect
+  };
+
+  const loadMoreProfiles = () => {
+    if (!profilesLoading && hasMore) {
+      setCurrentPage(prev => prev + 1);
+      fetchProfiles(false);
+    }
   };
 
   if (loading) {
@@ -363,16 +393,21 @@ export default function Browse() {
             </div>
           </div>
 
-          {/* Results Count */}
-          <div className="mt-4 pt-4 border-t border-white/10">
+          {/* Results Count and Pagination Info */}
+          <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <p className="text-white/60 text-sm">
-              Showing {filteredProfiles.length} of {profiles.length} students
-              {filters.interests && (
+              Showing {filteredProfiles.length} of {totalCount} students
+              {(filters.searchTerm || filters.campus || filters.major || filters.graduationYear || filters.interests) && (
                 <span className="ml-2 text-white/40">
-                  • Filtering by: {filters.interests}
+                  • Filtered results
                 </span>
               )}
             </p>
+            {totalCount > profilesPerPage && (
+              <div className="text-white/60 text-sm">
+                Page {currentPage} of {Math.ceil(totalCount / profilesPerPage)}
+              </div>
+            )}
           </div>
         </div>
 
@@ -397,7 +432,7 @@ export default function Browse() {
             {filteredProfiles.map((profile) => (
               <div
                 key={profile.id}
-                className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all hover:transform hover:scale-105 cursor-pointer"
+                className="bg-white/5 backdrop-blur-md rounded-2xl p-6 border border-white/10 hover:border-white/20 transition-all hover:transform hover:scale-105 cursor-pointer flex flex-col"
                 onClick={() => router.push(`/profile/${profile.user_id}`)}
               >
                 {/* Profile Header */}
@@ -467,13 +502,86 @@ export default function Browse() {
                 )}
 
                 {/* Connection Actions */}
-                <div className="mt-4 pt-4 border-t border-white/10">
+                <div className="mt-auto pt-4 border-t border-white/10">
                   <button className="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     View Profile
                   </button>
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {totalCount > profilesPerPage && (
+          <div className="mt-8 flex justify-center items-center space-x-4">
+            <button
+              onClick={() => {
+                if (currentPage > 1) {
+                  setCurrentPage(currentPage - 1);
+                  fetchProfiles(false);
+                }
+              }}
+              disabled={currentPage <= 1 || profilesLoading}
+              className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            
+            <div className="flex items-center space-x-2">
+              {Array.from({ length: Math.min(5, Math.ceil(totalCount / profilesPerPage)) }, (_, i) => {
+                const pageNum = i + 1;
+                const isCurrentPage = pageNum === currentPage;
+                
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => {
+                      setCurrentPage(pageNum);
+                      fetchProfiles(false);
+                    }}
+                    disabled={profilesLoading}
+                    className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      isCurrentPage
+                        ? 'bg-red-500 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20 hover:text-white'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
+              
+              {Math.ceil(totalCount / profilesPerPage) > 5 && (
+                <>
+                  <span className="text-white/40">...</span>
+                  <button
+                    onClick={() => {
+                      const lastPage = Math.ceil(totalCount / profilesPerPage);
+                      setCurrentPage(lastPage);
+                      fetchProfiles(false);
+                    }}
+                    disabled={profilesLoading}
+                    className="px-3 py-2 bg-white/10 text-white/70 hover:bg-white/20 hover:text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {Math.ceil(totalCount / profilesPerPage)}
+                  </button>
+                </>
+              )}
+            </div>
+            
+            <button
+              onClick={() => {
+                if (currentPage < Math.ceil(totalCount / profilesPerPage)) {
+                  setCurrentPage(currentPage + 1);
+                  fetchProfiles(false);
+                }
+              }}
+              disabled={currentPage >= Math.ceil(totalCount / profilesPerPage) || profilesLoading}
+              className="px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
           </div>
         )}
       </main>
