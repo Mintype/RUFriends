@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import Link from 'next/link';
 
 interface Profile {
   classes: string[];
@@ -387,7 +388,7 @@ export default function Dashboard() {
           </div>
         </div> */}
       </main>
-      {/* Footer */}
+     {/* Footer */}
       <footer className="border-t border-white/10 bg-black/20 backdrop-blur-sm">
         <div className="max-w-6xl mx-auto px-6 py-12">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
@@ -397,6 +398,12 @@ export default function Dashboard() {
               <span className="text-white/60 text-sm">Connecting Scarlet Knights since 2025</span>
             </div>
             <div className="flex space-x-8 text-sm">
+              <Link 
+                href="/privacy"
+                className="text-white/60 hover:text-red-400 transition-colors"
+              >
+                Privacy Policy
+              </Link>
               <a 
                 href="https://github.com/Mintype/RUFriends" 
                 target="_blank" 

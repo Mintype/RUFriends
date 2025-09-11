@@ -4,6 +4,7 @@ import { useAuth } from '../../lib/auth-context';
 import { useRouter, useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
+import Link from 'next/link';
 
 interface Profile {
   id: string;
@@ -452,6 +453,12 @@ export default function UserProfile() {
               <span className="text-white/60 text-sm">Connecting Scarlet Knights since 2025</span>
             </div>
             <div className="flex space-x-8 text-sm">
+              <Link 
+                href="/privacy"
+                className="text-white/60 hover:text-red-400 transition-colors"
+              >
+                Privacy Policy
+              </Link>
               <a 
                 href="https://github.com/Mintype/RUFriends" 
                 target="_blank" 

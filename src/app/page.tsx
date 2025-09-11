@@ -353,12 +353,12 @@ export default function Home() {
               <span className="text-white/60 text-sm">Connecting Scarlet Knights since 2025</span>
             </div>
             <div className="flex space-x-8 text-sm">
-              {/* <Link 
+              <Link 
                 href="/privacy"
                 className="text-white/60 hover:text-red-400 transition-colors"
               >
                 Privacy Policy
-              </Link> */}
+              </Link>
               <a 
                 href="https://github.com/Mintype/RUFriends" 
                 target="_blank" 
