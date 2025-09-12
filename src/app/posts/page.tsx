@@ -738,7 +738,7 @@ export default function Posts() {
           <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
             <div className="text-white/70 text-sm">
               <span className="font-medium">Active filters:</span>
-              {searchQuery && <span className="ml-2 px-2 py-1 bg-red-500/20 rounded text-red-300">Search: "{searchQuery}"</span>}
+              {searchQuery && <span className="ml-2 px-2 py-1 bg-red-500/20 rounded text-red-300">Search: &quot;{searchQuery}&quot;</span>}
               {dateFilter !== 'all' && <span className="ml-2 px-2 py-1 bg-green-500/20 rounded text-green-300">Past {dateFilter}</span>}
             </div>
           </div>
