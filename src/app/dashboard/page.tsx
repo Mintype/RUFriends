@@ -228,7 +228,7 @@ export default function Dashboard() {
           </div>
           
           <div className="grid md:grid-cols-3 gap-4">
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer" onClick={() => router.push('/settings')}>
               <div className="text-2xl mb-2">🎓</div>
               <h3 className="text-white font-semibold">Complete Profile</h3>
               <p className="text-white/60 text-sm">Add your courses and interests</p>
@@ -238,10 +238,10 @@ export default function Dashboard() {
               <h3 className="text-white font-semibold">Find Friends</h3>
               <p className="text-white/60 text-sm">Discover fellow Rutgers students</p>
             </div>
-            <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-              <div className="text-2xl mb-2">🌐</div>
-              <h3 className="text-white font-semibold">Connect & Network</h3>
-              <p className="text-white/60 text-sm">Build meaningful connections</p>
+            <div className="bg-white/5 rounded-2xl p-4 border border-white/10 hover:bg-white/10 transition-all cursor-pointer" onClick={() => router.push('/posts')}>
+              <div className="text-2xl mb-2">📝</div>
+              <h3 className="text-white font-semibold">Explore Posts</h3>
+              <p className="text-white/60 text-sm">Share updates and discussions</p>
             </div>
           </div>
         </div>
