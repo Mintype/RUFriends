@@ -38,6 +38,10 @@ export default function PostDetail() {
   const [replies, setReplies] = useState<Reply[]>([]);
   const [postLoading, setPostLoading] = useState(true);
   const [repliesLoading, setRepliesLoading] = useState(true);
+  const [loadingMoreReplies, setLoadingMoreReplies] = useState(false);
+  const [hasMoreReplies, setHasMoreReplies] = useState(true);
+  const [repliesPage, setRepliesPage] = useState(0);
+  const [totalRepliesCount, setTotalRepliesCount] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newReplyContent, setNewReplyContent] = useState('');
   const [isCreatingReply, setIsCreatingReply] = useState(false);
@@ -127,29 +131,84 @@ export default function PostDetail() {
     }
   }, [postId, user?.id]);
 
-  const fetchReplies = useCallback(async () => {
+  const fetchTotalRepliesCount = useCallback(async () => {
     if (!postId) return;
     
-    setRepliesLoading(true);
     try {
+      const { count, error } = await supabase
+        .from('replies')
+        .select('*', { count: 'exact', head: true })
+        .eq('post_id', postId);
+
+      if (error) {
+        console.error('Error fetching replies count:', error);
+        return;
+      }
+
+      setTotalRepliesCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching replies count:', error);
+    }
+  }, [postId]);
+
+  const fetchReplies = useCallback(async (page = 0, append = false) => {
+    if (!postId) return;
+    
+    if (page === 0) {
+      setRepliesLoading(true);
+      setReplies([]);
+      setRepliesPage(0);
+      setHasMoreReplies(true);
+      // Fetch total count when loading first page
+      fetchTotalRepliesCount();
+    } else {
+      setLoadingMoreReplies(true);
+    }
+    
+    try {
+      const pageSize = 5;
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+
       const { data, error } = await supabase
         .from('replies')
         .select('*')
         .eq('post_id', postId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: true })
+        .range(from, to);
 
       if (error) {
         console.error('Error fetching replies:', error);
         return;
       }
 
-      setReplies(data || []);
+      const newReplies = data || [];
+      
+      if (append) {
+        setReplies(prev => [...prev, ...newReplies]);
+      } else {
+        setReplies(newReplies);
+      }
+
+      // Check if there are more replies to load
+      if (newReplies.length < pageSize) {
+        setHasMoreReplies(false);
+      }
+
+      setRepliesPage(page);
     } catch (error) {
       console.error('Error fetching replies:', error);
     } finally {
       setRepliesLoading(false);
+      setLoadingMoreReplies(false);
     }
-  }, [postId]);
+  }, [postId, fetchTotalRepliesCount]);
+
+  const loadMoreReplies = () => {
+    if (!loadingMoreReplies && hasMoreReplies) {
+      fetchReplies(repliesPage + 1, true);
+    }
+  };
 
   const toggleLike = async () => {
     if (!user || !post) return;
@@ -224,7 +283,8 @@ export default function PostDetail() {
       }
 
       setNewReplyContent('');
-      fetchReplies(); // Refresh replies
+      setTotalRepliesCount(prev => prev + 1); // Increment total count
+      fetchReplies(0); // Refresh replies from the beginning
     } catch (error) {
       console.error('Error creating reply:', error);
       alert('Error creating reply. Please try again.');
@@ -385,6 +445,7 @@ export default function PostDetail() {
 
       // Remove from local state
       setReplies(prev => prev.filter(reply => reply.id !== replyId));
+      setTotalRepliesCount(prev => prev - 1); // Decrement total count
     } catch (error) {
       console.error('Error deleting reply:', error);
       alert('Failed to delete reply');
@@ -399,7 +460,7 @@ export default function PostDetail() {
     } else if (user?.id) {
       fetchUserProfile();
       fetchPost();
-      fetchReplies();
+      fetchReplies(0);
     }
   }, [user?.id, loading, router, fetchUserProfile, fetchPost, fetchReplies]);
 
@@ -709,7 +770,7 @@ export default function PostDetail() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <span>{replies.length} replies</span>
+              <span>{totalRepliesCount} replies</span>
             </div>
           </div>
         </div>
@@ -759,7 +820,7 @@ export default function PostDetail() {
         {/* Replies */}
         <div className="space-y-4">
           <h2 className="text-xl font-semibold text-white">
-            Replies ({replies.length})
+            Replies ({totalRepliesCount})
           </h2>
           
           {repliesLoading ? (
@@ -862,6 +923,26 @@ export default function PostDetail() {
                   )}
                 </div>
               ))}
+              
+              {/* Load More Button */}
+              {hasMoreReplies && (
+                <div className="text-center pt-4">
+                  <button
+                    onClick={loadMoreReplies}
+                    disabled={loadingMoreReplies}
+                    className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors border border-white/20"
+                  >
+                    {loadingMoreReplies ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        <span>Loading more replies...</span>
+                      </div>
+                    ) : (
+                      'Load More Replies'
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </div>
