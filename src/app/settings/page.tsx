@@ -221,6 +221,10 @@ export default function Settings() {
     );
   }
 
+  if (!user) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900">
       {/* Navigation */}
@@ -239,7 +243,7 @@ export default function Settings() {
             <div className="hidden md:flex items-center space-x-1">
               <button
                 onClick={() => router.push(`/dashboard/`)}
-                className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+                className="text-white/70 font-medium px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Dashboard
               </button>
@@ -250,14 +254,20 @@ export default function Settings() {
                 Find Friends
               </button>
               <button
-                onClick={() => router.push(`/profile/${user?.id}`)}
+                onClick={() => router.push(`/posts`)}
+                className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Posts
+              </button>
+              <button
+                onClick={() => router.push(`/profile/${user.id}`)}
                 className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Profile
               </button>
               <button
                 onClick={() => router.push(`/settings/`)}
-                className="text-white font-medium px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+                className="text-white hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Settings
               </button>
@@ -266,10 +276,10 @@ export default function Settings() {
             {/* Desktop User Info & Sign Out */}
             <div className="hidden md:flex items-center space-x-4">
               <div className="text-white/80 text-sm max-w-48 truncate">
-                {user?.user_metadata?.full_name || user?.email}
+                {user.user_metadata?.full_name || user.email}
               </div>
               <button
-                onClick={handleSignOut}
+                onClick={signOut}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >
                 Sign Out
@@ -299,7 +309,7 @@ export default function Settings() {
                   router.push(`/dashboard/`);
                   setMobileMenuOpen(false);
                 }}
-                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+                className="block w-full text-left text-white font-medium px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Dashboard
               </button>
@@ -314,7 +324,16 @@ export default function Settings() {
               </button>
               <button
                 onClick={() => {
-                  router.push(`/profile/${user?.id}`);
+                  router.push(`/posts`);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Posts
+              </button>
+              <button
+                onClick={() => {
+                  router.push(`/profile/${user.id}`);
                   setMobileMenuOpen(false);
                 }}
                 className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
@@ -326,7 +345,7 @@ export default function Settings() {
                   router.push(`/settings/`);
                   setMobileMenuOpen(false);
                 }}
-                className="block w-full text-left text-white font-medium px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Settings
               </button>
@@ -334,10 +353,10 @@ export default function Settings() {
               {/* Mobile User Info */}
               <div className="border-t border-white/10 pt-4 mt-4">
                 <div className="px-4 py-2 text-white/80 text-sm">
-                  {user?.user_metadata?.full_name || user?.email}
+                  {user.user_metadata?.full_name || user.email}
                 </div>
                 <button
-                  onClick={handleSignOut}
+                  onClick={signOut}
                   className="w-full mt-2 bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-lg font-medium transition-colors"
                 >
                   Sign Out
