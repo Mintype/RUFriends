@@ -34,6 +34,16 @@ export default function Posts() {
   const [newPostContent, setNewPostContent] = useState('');
   const [isCreatingPost, setIsCreatingPost] = useState(false);
   const [userProfile, setUserProfile] = useState<Profile | null>(null);
+  
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'top'>('newest');
+  const [dateFilter, setDateFilter] = useState<'day' | 'week' | 'month' | 'all'>('all');
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(0);
+  const [hasMorePosts, setHasMorePosts] = useState(true);
+  const [loadingMorePosts, setLoadingMorePosts] = useState(false);
 
   const fetchUserProfile = useCallback(async () => {
     if (!user) return;
@@ -54,13 +64,25 @@ export default function Posts() {
     }
   }, [user?.id]);
 
-  const fetchPosts = useCallback(async () => {
+  const fetchPosts = useCallback(async (page = 0, append = false) => {
     if (!user) return;
     
-    setPostsLoading(true);
+    if (page === 0) {
+      setPostsLoading(true);
+      setPosts([]);
+      setCurrentPage(0);
+      setHasMorePosts(true);
+    } else {
+      setLoadingMorePosts(true);
+    }
+    
     try {
-      // Fetch posts with like counts and user's like status
-      const { data: postsData, error } = await supabase
+      const pageSize = 10;
+      const from = page * pageSize;
+      const to = from + pageSize - 1;
+      
+      // Build the query with filters
+      let query = supabase
         .from('posts')
         .select(`
           id,
@@ -70,8 +92,46 @@ export default function Posts() {
           content,
           created_at,
           updated_at
-        `)
-        .order('created_at', { ascending: false });
+        `);
+      
+      // Apply search filter
+      if (searchQuery.trim()) {
+        query = query.ilike('title', `%${searchQuery.trim()}%`);
+      }
+      
+      // Apply date filter
+      if (dateFilter !== 'all') {
+        const now = new Date();
+        let cutoffDate: Date;
+        
+        switch (dateFilter) {
+          case 'day':
+            cutoffDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+            break;
+          case 'week':
+            cutoffDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            break;
+          case 'month':
+            cutoffDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            break;
+          default:
+            cutoffDate = new Date(0);
+        }
+        
+        query = query.gte('created_at', cutoffDate.toISOString());
+      }
+      
+      // Apply sorting and pagination
+      if (sortBy === 'newest') {
+        query = query.order('created_at', { ascending: false });
+      } else if (sortBy === 'oldest') {
+        query = query.order('created_at', { ascending: true });
+      }
+      // Note: 'top' sorting will be handled after we get like counts
+      
+      query = query.range(from, to);
+      
+      const { data: postsData, error } = await query;
 
       if (error) {
         console.error('Error fetching posts:', error);
@@ -110,14 +170,52 @@ export default function Posts() {
           })
         );
 
-        setPosts(postsWithLikeStatus);
+        // Apply 'top' sorting after getting like counts
+        let sortedPosts = postsWithLikeStatus;
+        if (sortBy === 'top') {
+          sortedPosts = postsWithLikeStatus.sort((a, b) => b.likes - a.likes);
+        }
+
+        if (append) {
+          setPosts(prev => [...prev, ...sortedPosts]);
+        } else {
+          setPosts(sortedPosts);
+        }
+
+        // Check if there are more posts to load
+        if (postsData.length < pageSize) {
+          setHasMorePosts(false);
+        }
+
+        setCurrentPage(page);
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
     } finally {
       setPostsLoading(false);
+      setLoadingMorePosts(false);
     }
-  }, [user?.id]);
+  }, [user?.id, searchQuery, sortBy, dateFilter]);
+
+  const loadMorePosts = () => {
+    if (!loadingMorePosts && hasMorePosts) {
+      fetchPosts(currentPage + 1, true);
+    }
+  };
+
+  const handleSearch = () => {
+    setCurrentPage(0);
+    setHasMorePosts(true);
+    fetchPosts(0);
+  };
+
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSortBy('newest');
+    setDateFilter('all');
+    setCurrentPage(0);
+    setHasMorePosts(true);
+  };
 
   const createPost = async () => {
     if (!user || !userProfile || !newPostTitle.trim() || !newPostContent.trim()) return;
@@ -142,7 +240,7 @@ export default function Posts() {
       setNewPostTitle('');
       setNewPostContent('');
       setShowCreatePost(false);
-      fetchPosts();
+      fetchPosts(0);
     } catch (error) {
       console.error('Error creating post:', error);
       alert('Error creating post. Please try again.');
@@ -209,9 +307,16 @@ export default function Posts() {
       router.push('/');
     } else if (user?.id) {
       fetchUserProfile();
-      fetchPosts();
+      fetchPosts(0);
     }
   }, [user?.id, loading, router, fetchUserProfile, fetchPosts]);
+
+  // Auto-search when filters change
+  useEffect(() => {
+    if (user?.id) {
+      fetchPosts(0);
+    }
+  }, [searchQuery, sortBy, dateFilter, fetchPosts, user?.id]);
 
   if (loading) {
     return (
@@ -371,6 +476,74 @@ export default function Posts() {
       <div className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-6">Posts</h1>
+          
+          {/* Search and Filters */}
+          <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 mb-6 border border-white/20">
+            {/* Search Bar - Top Row */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-white mb-2">Search Posts</label>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by post title..."
+                  className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+                <button
+                  onClick={handleSearch}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Search
+                </button>
+              </div>
+            </div>
+            
+            {/* Filters and Actions - Bottom Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+              {/* Sort By */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Sort By</label>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'top')}
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="newest" className="bg-gray-800">Newest</option>
+                  <option value="oldest" className="bg-gray-800">Oldest</option>
+                  <option value="top" className="bg-gray-800">Most Liked</option>
+                </select>
+              </div>
+              
+              {/* Date Filter */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Date Range</label>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => setDateFilter(e.target.value as 'day' | 'week' | 'month' | 'all')}
+                  className="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  <option value="all" className="bg-gray-800">All Time</option>
+                  <option value="day" className="bg-gray-800">Past Day</option>
+                  <option value="week" className="bg-gray-800">Past Week</option>
+                  <option value="month" className="bg-gray-800">Past Month</option>
+                </select>
+              </div>
+              
+              {/* Clear Filters Button */}
+              <div className="sm:col-span-2 lg:col-span-2">
+                <label className="block text-sm font-medium text-white mb-2">Actions</label>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={clearFilters}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  >
+                    Clear All Filters
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
           
           {/* Create Post Button */}
           <button
@@ -537,6 +710,37 @@ export default function Posts() {
                 </div>
               </div>
             ))}
+            
+            {/* Load More Button */}
+            {hasMorePosts && (
+              <div className="text-center pt-6">
+                <button
+                  onClick={loadMorePosts}
+                  disabled={loadingMorePosts}
+                  className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg font-medium transition-colors border border-white/20"
+                >
+                  {loadingMorePosts ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                      <span>Loading more posts...</span>
+                    </div>
+                  ) : (
+                    'Load More Posts'
+                  )}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Filter Status Display */}
+        {(searchQuery || dateFilter !== 'all') && (
+          <div className="mt-6 p-4 bg-white/5 rounded-lg border border-white/10">
+            <div className="text-white/70 text-sm">
+              <span className="font-medium">Active filters:</span>
+              {searchQuery && <span className="ml-2 px-2 py-1 bg-red-500/20 rounded text-red-300">Search: "{searchQuery}"</span>}
+              {dateFilter !== 'all' && <span className="ml-2 px-2 py-1 bg-green-500/20 rounded text-green-300">Past {dateFilter}</span>}
+            </div>
           </div>
         )}
       </div>
