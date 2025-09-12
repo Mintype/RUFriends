@@ -42,6 +42,19 @@ export default function PostDetail() {
   const [newReplyContent, setNewReplyContent] = useState('');
   const [isCreatingReply, setIsCreatingReply] = useState(false);
   const [userProfile, setUserProfile] = useState<{ display_name: string } | null>(null);
+  
+  // Edit post states
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  const [editContent, setEditContent] = useState('');
+  const [isUpdatingPost, setIsUpdatingPost] = useState(false);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+  
+  // Edit reply states
+  const [editingReplyId, setEditingReplyId] = useState<string | null>(null);
+  const [editReplyContent, setEditReplyContent] = useState('');
+  const [isUpdatingReply, setIsUpdatingReply] = useState(false);
+  const [isDeletingReply, setIsDeletingReply] = useState(false);
 
   const fetchUserProfile = useCallback(async () => {
     if (!user) return;
@@ -188,6 +201,12 @@ export default function PostDetail() {
   const createReply = async () => {
     if (!user || !userProfile || !newReplyContent.trim() || !post) return;
 
+    // Validate reply length (1-500 characters)
+    if (newReplyContent.trim().length < 1 || newReplyContent.trim().length > 500) {
+      alert('Reply must be between 1 and 500 characters');
+      return;
+    }
+
     setIsCreatingReply(true);
     try {
       const { error } = await supabase
@@ -195,6 +214,7 @@ export default function PostDetail() {
         .insert({
           post_id: post.id,
           content: newReplyContent.trim()
+          // user_id and username will be auto-populated by database triggers for security
         });
 
       if (error) {
@@ -210,6 +230,166 @@ export default function PostDetail() {
       alert('Error creating reply. Please try again.');
     } finally {
       setIsCreatingReply(false);
+    }
+  };
+
+  const startEditing = () => {
+    if (post) {
+      setEditTitle(post.title);
+      setEditContent(post.content);
+      setIsEditing(true);
+    }
+  };
+
+  const cancelEditing = () => {
+    setIsEditing(false);
+    setEditTitle('');
+    setEditContent('');
+  };
+
+  const updatePost = async () => {
+    if (!user || !post || !editTitle.trim() || !editContent.trim()) return;
+
+    setIsUpdatingPost(true);
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .update({
+          title: editTitle.trim(),
+          content: editContent.trim()
+        })
+        .eq('id', post.id)
+        .eq('user_id', user.id); // Ensure user can only update their own posts
+
+      if (error) {
+        console.error('Error updating post:', error);
+        alert('Error updating post. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setPost(prev => prev ? {
+        ...prev,
+        title: editTitle.trim(),
+        content: editContent.trim()
+      } : null);
+
+      setIsEditing(false);
+      setEditTitle('');
+      setEditContent('');
+    } catch (error) {
+      console.error('Error updating post:', error);
+      alert('Error updating post. Please try again.');
+    } finally {
+      setIsUpdatingPost(false);
+    }
+  };
+
+  const deletePost = async () => {
+    if (!user || !post || isDeletingPost) return;
+    
+    const confirmDelete = window.confirm('Are you sure you want to delete this post? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    setIsDeletingPost(true);
+
+    try {
+      const { error } = await supabase
+        .from('posts')
+        .delete()
+        .eq('id', post.id)
+        .eq('user_id', user.id); // Extra security check
+
+      if (error) throw error;
+
+      // Navigate back to posts page
+      router.push('/posts');
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      alert('Failed to delete post');
+    } finally {
+      setIsDeletingPost(false);
+    }
+  };
+
+  const startEditingReply = (reply: Reply) => {
+    setEditingReplyId(reply.id);
+    setEditReplyContent(reply.content);
+  };
+
+  const cancelEditingReply = () => {
+    setEditingReplyId(null);
+    setEditReplyContent('');
+  };
+
+  const updateReply = async (replyId: string) => {
+    if (!user || !editReplyContent.trim() || isUpdatingReply) return;
+
+    // Validate reply length (1-500 characters)
+    if (editReplyContent.trim().length < 1 || editReplyContent.trim().length > 500) {
+      alert('Reply must be between 1 and 500 characters');
+      return;
+    }
+
+    setIsUpdatingReply(true);
+    try {
+      const { error } = await supabase
+        .from('replies')
+        .update({
+          content: editReplyContent.trim()
+        })
+        .eq('id', replyId)
+        .eq('user_id', user.id); // Extra security check
+
+      if (error) {
+        console.error('Error updating reply:', error);
+        alert('Error updating reply. Please try again.');
+        return;
+      }
+
+      // Update local state
+      setReplies(prev => 
+        prev.map(reply => 
+          reply.id === replyId 
+            ? { ...reply, content: editReplyContent.trim() }
+            : reply
+        )
+      );
+
+      setEditingReplyId(null);
+      setEditReplyContent('');
+    } catch (error) {
+      console.error('Error updating reply:', error);
+      alert('Error updating reply. Please try again.');
+    } finally {
+      setIsUpdatingReply(false);
+    }
+  };
+
+  const deleteReply = async (replyId: string) => {
+    if (!user || isDeletingReply) return;
+    
+    const confirmDelete = window.confirm('Are you sure you want to delete this reply? This action cannot be undone.');
+    if (!confirmDelete) return;
+
+    setIsDeletingReply(true);
+
+    try {
+      const { error } = await supabase
+        .from('replies')
+        .delete()
+        .eq('id', replyId)
+        .eq('user_id', user.id); // Extra security check
+
+      if (error) throw error;
+
+      // Remove from local state
+      setReplies(prev => prev.filter(reply => reply.id !== replyId));
+    } catch (error) {
+      console.error('Error deleting reply:', error);
+      alert('Failed to delete reply');
+    } finally {
+      setIsDeletingReply(false);
     }
   };
 
@@ -400,14 +580,117 @@ export default function PostDetail() {
 
         {/* Post */}
         <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 border border-white/20 mb-8">
-          <div className="mb-4">
-            <h1 className="text-2xl font-bold text-white mb-3">{post.title}</h1>
-            <p className="text-white/70 text-sm">
-              By {post.username} • {new Date(post.created_at).toLocaleDateString()} at {new Date(post.created_at).toLocaleTimeString()}
-            </p>
-          </div>
-          
-          <div className="text-white/90 mb-6 whitespace-pre-wrap leading-relaxed">{post.content}</div>
+          {!isEditing ? (
+            // Display mode
+            <>
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <h1 className="text-2xl font-bold text-white mb-3">{post.title}</h1>
+                  <p className="text-white/70 text-sm">
+                    By <button
+                      onClick={() => router.push(`/profile/${post.user_id}`)}
+                      className="text-white/70 hover:text-red-400 transition-colors cursor-pointer font-medium"
+                    >
+                      {post.username}
+                    </button> • {new Date(post.created_at).toLocaleDateString()} at {new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </p>
+                </div>
+                {/* Edit and Delete buttons - only show if user owns the post */}
+                {user && post.user_id === user.id && (
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={startEditing}
+                      className="flex items-center space-x-2 text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                      <span className="text-sm">Edit</span>
+                    </button>
+                    <button
+                      onClick={deletePost}
+                      disabled={isDeletingPost}
+                      className="flex items-center space-x-2 text-red-400 hover:text-red-300 px-3 py-2 rounded-lg hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      <span className="text-sm">{isDeletingPost ? 'Deleting...' : 'Delete'}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+              
+              <div className="text-white/90 mb-6 whitespace-pre-wrap leading-relaxed">{post.content}</div>
+            </>
+          ) : (
+            // Edit mode
+            <div className="space-y-4 mb-6">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-white">Title</label>
+                  <span className={`text-xs ${editTitle.length > 200 ? 'text-red-400' : 'text-white/50'}`}>
+                    {editTitle.length}/200
+                  </span>
+                </div>
+                <input
+                  type="text"
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value.slice(0, 200))}
+                  placeholder="Enter post title..."
+                  maxLength={200}
+                  className={`w-full px-4 py-2 bg-white/10 border rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 ${
+                    editTitle.length > 200 
+                      ? 'border-red-400 focus:ring-red-500' 
+                      : 'border-white/20 focus:ring-red-500'
+                  }`}
+                />
+              </div>
+              
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium text-white">Content</label>
+                  <span className={`text-xs ${editContent.length > 5000 ? 'text-red-400' : 'text-white/50'}`}>
+                    {editContent.length}/5000
+                  </span>
+                </div>
+                <textarea
+                  value={editContent}
+                  onChange={(e) => setEditContent(e.target.value.slice(0, 5000))}
+                  placeholder="What's on your mind?"
+                  rows={6}
+                  maxLength={5000}
+                  className={`w-full px-4 py-2 bg-white/10 border rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 resize-none ${
+                    editContent.length > 5000 
+                      ? 'border-red-400 focus:ring-red-500' 
+                      : 'border-white/20 focus:ring-red-500'
+                  }`}
+                />
+              </div>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={updatePost}
+                  disabled={
+                    isUpdatingPost || 
+                    !editTitle.trim() || 
+                    !editContent.trim() ||
+                    editTitle.length > 200 ||
+                    editContent.length > 5000
+                  }
+                  className="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  {isUpdatingPost ? 'Saving...' : 'Save Changes'}
+                </button>
+                <button
+                  onClick={cancelEditing}
+                  className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
           
           <div className="flex items-center space-x-6 text-white/70 border-t border-white/10 pt-4">
             <button
@@ -439,18 +722,18 @@ export default function PostDetail() {
             <div>
               <div className="flex justify-between items-center mb-2">
                 <label className="block text-sm font-medium text-white">Your Reply</label>
-                <span className={`text-xs ${newReplyContent.length > 1000 ? 'text-red-400' : 'text-white/50'}`}>
-                  {newReplyContent.length}/1000
+                <span className={`text-xs ${newReplyContent.length > 500 ? 'text-red-400' : 'text-white/50'}`}>
+                  {newReplyContent.length}/500
                 </span>
               </div>
               <textarea
                 value={newReplyContent}
-                onChange={(e) => setNewReplyContent(e.target.value.slice(0, 1000))}
+                onChange={(e) => setNewReplyContent(e.target.value.slice(0, 500))}
                 placeholder="Write your reply..."
                 rows={3}
-                maxLength={1000}
+                maxLength={500}
                 className={`w-full px-4 py-2 bg-white/10 border rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 resize-none ${
-                  newReplyContent.length > 1000 
+                  newReplyContent.length > 500 
                     ? 'border-red-400 focus:ring-red-500' 
                     : 'border-white/20 focus:ring-red-500'
                 }`}
@@ -463,7 +746,7 @@ export default function PostDetail() {
                 disabled={
                   isCreatingReply || 
                   !newReplyContent.trim() ||
-                  newReplyContent.length > 1000
+                  newReplyContent.length > 500
                 }
                 className="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors"
               >
@@ -493,12 +776,90 @@ export default function PostDetail() {
               {replies.map((reply) => (
                 <div key={reply.id} className="bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/10">
                   <div className="flex items-center justify-between mb-3">
-                    <span className="text-white font-medium">{reply.username}</span>
-                    <span className="text-white/50 text-sm">
-                      {new Date(reply.created_at).toLocaleDateString()} at {new Date(reply.created_at).toLocaleTimeString()}
-                    </span>
+                    <div className="flex items-center space-x-3">
+                      <button
+                        onClick={() => router.push(`/profile/${reply.user_id}`)}
+                        className="text-white font-medium hover:text-red-400 transition-colors cursor-pointer"
+                      >
+                        {reply.username}
+                      </button>
+                      <span className="text-white/50 text-sm">
+                        {new Date(reply.created_at).toLocaleDateString()} at {new Date(reply.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                    
+                    {/* Edit and Delete buttons - only show if user owns the reply */}
+                    {user && reply.user_id === user.id && editingReplyId !== reply.id && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => startEditingReply(reply)}
+                          className="flex items-center space-x-1 text-white/50 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          <span className="text-xs">Edit</span>
+                        </button>
+                        <button
+                          onClick={() => deleteReply(reply.id)}
+                          disabled={isDeletingReply}
+                          className="flex items-center space-x-1 text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                          <span className="text-xs">{isDeletingReply ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
-                  <div className="text-white/90 whitespace-pre-wrap">{reply.content}</div>
+                  
+                  {editingReplyId === reply.id ? (
+                    // Edit mode
+                    <div className="space-y-3">
+                      <div>
+                        <div className="flex justify-between items-center mb-2">
+                          <label className="block text-xs font-medium text-white">Edit Reply</label>
+                          <span className={`text-xs ${editReplyContent.length > 500 ? 'text-red-400' : 'text-white/50'}`}>
+                            {editReplyContent.length}/500
+                          </span>
+                        </div>
+                        <textarea
+                          value={editReplyContent}
+                          onChange={(e) => setEditReplyContent(e.target.value.slice(0, 500))}
+                          rows={3}
+                          maxLength={500}
+                          className={`w-full px-3 py-2 bg-white/10 border rounded text-white placeholder-white/50 focus:outline-none focus:ring-2 resize-none text-sm ${
+                            editReplyContent.length > 500 
+                              ? 'border-red-400 focus:ring-red-500' 
+                              : 'border-white/20 focus:ring-red-500'
+                          }`}
+                        />
+                      </div>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => updateReply(reply.id)}
+                          disabled={
+                            isUpdatingReply || 
+                            !editReplyContent.trim() ||
+                            editReplyContent.length > 500
+                          }
+                          className="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 py-1 rounded text-sm font-medium transition-colors"
+                        >
+                          {isUpdatingReply ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          onClick={cancelEditingReply}
+                          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-1 rounded text-sm font-medium transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    // Display mode
+                    <div className="text-white/90 whitespace-pre-wrap">{reply.content}</div>
+                  )}
                 </div>
               ))}
             </div>
