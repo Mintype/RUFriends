@@ -1,4 +1,3 @@
-// Mock course data - replace with your actual 3600 courses
 export const COURSES = [
 '17Th Century Poetry',
 '18Th Century Novel',
