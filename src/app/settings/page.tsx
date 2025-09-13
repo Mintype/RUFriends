@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import { COURSES } from '../../data/courses';
 import Link from 'next/link';
 
 interface ProfileFormData {
@@ -48,6 +49,11 @@ export default function Settings() {
   // Form input states for arrays
   const [newClass, setNewClass] = useState('');
   const [newInterest, setNewInterest] = useState('');
+  
+  // Course autocomplete states
+  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
+  const [filteredCourses, setFilteredCourses] = useState<string[]>([]);
+  const [courseSearchTerm, setCourseSearchTerm] = useState('');
 
   const fetchProfile = useCallback(async () => {
     if (!user) return;
@@ -110,10 +116,40 @@ export default function Settings() {
     }));
   };
 
+  // Course autocomplete functions
+  const handleCourseSearch = (value: string) => {
+    setCourseSearchTerm(value);
+    setNewClass(value);
+    
+    if (value.trim()) {
+      const filtered = COURSES.filter((course: string) =>
+        course.toLowerCase().includes(value.toLowerCase())
+      ).slice(0, 10); // Limit to 10 results for performance
+      setFilteredCourses(filtered);
+      setShowCourseDropdown(true);
+    } else {
+      setFilteredCourses([]);
+      setShowCourseDropdown(false);
+    }
+  };
+
+  const selectCourse = (course: string) => {
+    if (!profile.classes.includes(course)) {
+      handleInputChange('classes', [...profile.classes, course]);
+    }
+    setCourseSearchTerm('');
+    setNewClass('');
+    setShowCourseDropdown(false);
+    setFilteredCourses([]);
+  };
+
   const addClass = () => {
     if (newClass.trim() && !profile.classes.includes(newClass.trim())) {
       handleInputChange('classes', [...profile.classes, newClass.trim()]);
       setNewClass('');
+      setCourseSearchTerm('');
+      setShowCourseDropdown(false);
+      setFilteredCourses([]);
     }
   };
 
@@ -472,22 +508,54 @@ export default function Settings() {
               <label className="block text-sm font-medium text-white mb-2">
                 Current Classes
               </label>
-              <div className="flex gap-2 mb-3">
-                <input
-                  type="text"
-                  value={newClass}
-                  onChange={(e) => setNewClass(e.target.value)}
-                  placeholder="e.g., CS112"
-                  className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-white/50"
-                  onKeyPress={(e) => e.key === 'Enter' && addClass()}
-                />
-                <button
-                  type="button"
-                  onClick={addClass}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Add
-                </button>
+              <div className="relative mb-3">
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <input
+                      type="text"
+                      value={newClass}
+                      onChange={(e) => handleCourseSearch(e.target.value)}
+                      onFocus={() => {
+                        if (newClass.trim()) {
+                          setShowCourseDropdown(true);
+                        }
+                      }}
+                      onBlur={() => {
+                        // Delay hiding dropdown to allow for clicks
+                        setTimeout(() => setShowCourseDropdown(false), 200);
+                      }}
+                      placeholder="Search courses (e.g., CS112, Calculus, Biology)"
+                      className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-white placeholder-white/50"
+                      onKeyPress={(e) => e.key === 'Enter' && addClass()}
+                    />
+                    
+                    {/* Autocomplete Dropdown */}
+                    {showCourseDropdown && filteredCourses.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-slate-800 border border-white/20 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50">
+                        {filteredCourses.map((course, index) => (
+                          <button
+                            key={index}
+                            type="button"
+                            onClick={() => selectCourse(course)}
+                            className="w-full text-left px-4 py-2 hover:bg-slate-700 text-white text-sm border-b border-white/10 last:border-b-0 transition-colors"
+                          >
+                            {course}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addClass}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Add
+                  </button>
+                </div>
+                <p className="text-xs text-white/50 mt-1">
+                  Start typing to search from 3600+ available courses, or type your own
+                </p>
               </div>
               <div className="flex flex-wrap gap-2">
                 {profile.classes.map((cls, index) => (
