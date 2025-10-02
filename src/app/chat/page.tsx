@@ -37,6 +37,7 @@ export default function Chat() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -58,6 +59,26 @@ export default function Chat() {
       }
     };
   }, []);
+
+  // Close context menu on click outside or escape
+  useEffect(() => {
+    const handleGlobalClick = () => handleClickOutside();
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setContextMenu(null);
+      }
+    };
+
+    if (contextMenu) {
+      document.addEventListener('click', handleGlobalClick);
+      document.addEventListener('keydown', handleEscape);
+    }
+
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [contextMenu]);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -159,6 +180,68 @@ export default function Chat() {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleRightClick = (e: React.MouseEvent, messageId: string, senderId: string) => {
+    // Only allow right-click on own messages
+    if (senderId !== user?.id) return;
+    
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      messageId: messageId
+    });
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    try {
+      console.log('Attempting to delete message:', messageId);
+      
+      const { data, error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId)
+        .eq('sender_id', user?.id); // Extra security check
+      
+      console.log('Delete result:', { data, error });
+      
+      if (error) {
+        console.error('Error deleting message:', error);
+        alert('Failed to delete message. Please try again.');
+        return;
+      }
+
+      console.log('Message deleted successfully, refreshing messages...');
+
+      // Remove the message from local state immediately for better UX
+      setMessages(prevMessages => prevMessages.filter(msg => msg.message_id !== messageId));
+
+      // Also refresh from server to stay in sync
+      if (selectedConversation) {
+        const { data: messagesData, error: messagesError } = await supabase.rpc('get_conversation_messages', {
+          conv_id: selectedConversation,
+          limit_count: 50,
+          offset_count: 0
+        });
+        
+        if (!messagesError) {
+          setMessages((messagesData || []).reverse());
+        } else {
+          console.error('Error refreshing messages:', messagesError);
+        }
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setContextMenu(null);
+    }
+  };
+
+  // Close context menu when clicking outside
+  const handleClickOutside = () => {
+    setContextMenu(null);
   };
 
   const formatTime = (timestamp: string) => {
@@ -493,11 +576,12 @@ export default function Chat() {
                           </div>
                         )}
                         <div
-                          className={`px-4 py-2 rounded-2xl break-words max-w-xs sm:max-w-sm md:max-w-md ${
+                          className={`px-4 py-2 rounded-2xl break-words max-w-xs sm:max-w-sm md:max-w-md relative ${
                             message.sender_id === user.id
-                              ? 'bg-red-500 text-white rounded-br-md'
+                              ? 'bg-red-500 text-white rounded-br-md cursor-context-menu'
                               : 'bg-white/10 text-white rounded-bl-md'
                           }`}
+                          onContextMenu={(e) => handleRightClick(e, message.message_id, message.sender_id)}
                         >
                           <p className="text-sm break-words">{message.content}</p>
                           <p className={`text-xs mt-1 ${
@@ -574,6 +658,27 @@ export default function Chat() {
         </div>
       </div>
 
+      {/* Context Menu */}
+      {contextMenu && (
+        <div 
+          className="fixed bg-black/90 backdrop-blur-sm border border-white/20 rounded-lg shadow-xl z-50 py-2 min-w-32"
+          style={{ 
+            left: contextMenu.x, 
+            top: contextMenu.y,
+            transform: 'translate(-50%, -100%)' // Center horizontally and position above cursor
+          }}
+        >
+          <button
+            onClick={() => deleteMessage(contextMenu.messageId)}
+            className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-sm flex items-center space-x-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            <span>Delete Message</span>
+          </button>
+        </div>
+      )}
 
     </div>
   );
