@@ -2,7 +2,7 @@
 
 import { useAuth } from '../lib/auth-context';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
 interface Conversation {
@@ -38,6 +38,52 @@ export default function Chat() {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
+  
+  // Ref for the messages container to enable auto-scroll
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Function to scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // Function to scroll to bottom of messages instantly
+  const scrollToBottomInstant = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+  };
+
+  // Function to check if user is near bottom of messages
+  const isNearBottom = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+    
+    const threshold = 100; // pixels from bottom
+    const isNear = container.scrollTop + container.clientHeight + threshold >= container.scrollHeight;
+    return isNear;
+  };
+
+  // Auto-scroll when messages change, but only if user is near bottom
+  useEffect(() => {
+    // Always scroll to bottom when loading messages initially or switching conversations
+    if (isLoadingMessages) return;
+    
+    // For new messages, only auto-scroll if user is near bottom or it's their own message
+    const shouldAutoScroll = isNearBottom() || messages.length === 0;
+    
+    if (shouldAutoScroll) {
+      // Small delay to ensure DOM is updated
+      setTimeout(scrollToBottom, 100);
+    }
+  }, [messages, isLoadingMessages]);
+
+  // Scroll to bottom when conversation is selected (after messages are loaded)
+  useEffect(() => {
+    if (selectedConversation && !isLoadingMessages && messages.length > 0) {
+      // Scroll to bottom when switching conversations
+      setTimeout(scrollToBottomInstant, 50);
+    }
+  }, [selectedConversation, isLoadingMessages, messages.length]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -110,6 +156,50 @@ export default function Chat() {
     }
   }, [user, conversationParam]);
 
+  // Realtime subscription for conversations and messages to update sidebar
+  useEffect(() => {
+    if (!user) return;
+
+    const conversationsChannel = supabase
+      .channel('conversations-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'conversations'
+        },
+        async () => {
+          // Refresh conversations when any conversation is created/updated
+          const { data, error } = await supabase.rpc('get_user_conversations');
+          if (!error && data) {
+            setConversations(data);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages'
+        },
+        async () => {
+          // Refresh conversations when new messages are sent (updates last_message info)
+          const { data, error } = await supabase.rpc('get_user_conversations');
+          if (!error && data) {
+            setConversations(data);
+          }
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription when component unmounts
+    return () => {
+      supabase.removeChannel(conversationsChannel);
+    };
+  }, [user]);
+
   useEffect(() => {
     const fetchMessages = async () => {
       if (!selectedConversation) {
@@ -138,38 +228,138 @@ export default function Chat() {
       }
     };
 
-    fetchMessages();
+    if (selectedConversation) {
+      fetchMessages();
+    }
   }, [selectedConversation]);
+
+  // Realtime subscription for messages
+  useEffect(() => {
+    if (!selectedConversation || !user) return;
+
+    console.log('Setting up realtime subscription for conversation:', selectedConversation);
+
+    // Subscribe to messages table changes for the current conversation
+    const messagesChannel = supabase
+      .channel(`messages-${selectedConversation}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedConversation}`
+        },
+        async (payload) => {
+          console.log('New message received via realtime:', payload);
+          
+          // Get the message ID from the payload
+          const messageId = payload.new?.id;
+          const senderId = payload.new?.sender_id;
+          if (!messageId) return;
+          
+          // Fetch the complete message data with sender info using the RPC function
+          const { data: messagesData, error } = await supabase.rpc('get_conversation_messages', {
+            conv_id: selectedConversation,
+            limit_count: 50,
+            offset_count: 0
+          });
+          
+          if (!error && messagesData) {
+            // Find the specific message that was just inserted
+            const newMessage = messagesData.find((msg: any) => msg.message_id === messageId);
+            
+            if (newMessage) {
+              console.log('Processing realtime message:', newMessage);
+              
+              setMessages(prevMessages => {
+                // If this is our own message, replace any optimistic message
+                if (senderId === user?.id) {
+                  // Remove any temporary messages and add the real one
+                  const withoutTemp = prevMessages.filter(msg => !msg.message_id.startsWith('temp-'));
+                  // Check if the real message already exists
+                  if (withoutTemp.some(msg => msg.message_id === newMessage.message_id)) {
+                    return withoutTemp;
+                  }
+                  return [...withoutTemp, newMessage];
+                } else {
+                  // For messages from others, just check for duplicates and add
+                  if (prevMessages.some(msg => msg.message_id === newMessage.message_id)) {
+                    console.log('Message already exists, skipping duplicate');
+                    return prevMessages;
+                  }
+                  return [...prevMessages, newMessage];
+                }
+              });
+            }
+          } else {
+            console.error('Error fetching message details:', error);
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${selectedConversation}`
+        },
+        (payload) => {
+          // Remove deleted message from state
+          setMessages(prevMessages => 
+            prevMessages.filter(msg => msg.message_id !== payload.old.id)
+          );
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription when conversation changes or component unmounts
+    return () => {
+      supabase.removeChannel(messagesChannel);
+    };
+  }, [selectedConversation, user]);
 
   const sendMessage = async () => {
     if (!selectedConversation || !newMessage.trim() || isSendingMessage) return;
     
+    console.log('Sending message:', newMessage.trim(), 'to conversation:', selectedConversation);
+    
+    const messageContent = newMessage.trim();
+    setNewMessage(''); // Clear input immediately for better UX
     setIsSendingMessage(true);
+    
     try {
       const { data, error } = await supabase.rpc('send_message', {
         conversation_id: selectedConversation,
-        message_content: newMessage.trim()
+        message_content: messageContent
       });
       
       if (error) {
         console.error('Error sending message:', error);
+        // Restore the message in input if there was an error
+        setNewMessage(messageContent);
         return;
       }
 
-      // Refresh messages after sending
-      const { data: messagesData, error: messagesError } = await supabase.rpc('get_conversation_messages', {
-        conv_id: selectedConversation,
-        limit_count: 50,
-        offset_count: 0
-      });
+      console.log('Message sent successfully:', data);
       
-      if (!messagesError) {
-        setMessages((messagesData || []).reverse());
-      }
+      // Optimistically add the message to UI immediately
+      const optimisticMessage = {
+        message_id: `temp-${Date.now()}`, // Temporary ID
+        content: messageContent,
+        created_at: new Date().toISOString(),
+        is_edited: false,
+        sender_id: user?.id || '',
+        sender_name: user?.user_metadata?.full_name || user?.email || 'You'
+      };
       
-      setNewMessage('');
+      setMessages(prevMessages => [...prevMessages, optimisticMessage]);
+      
     } catch (error) {
       console.error('Error:', error);
+      // Restore the message in input if there was an error
+      setNewMessage(messageContent);
     } finally {
       setIsSendingMessage(false);
     }
@@ -212,25 +402,8 @@ export default function Chat() {
         return;
       }
 
-      console.log('Message deleted successfully, refreshing messages...');
-
-      // Remove the message from local state immediately for better UX
-      setMessages(prevMessages => prevMessages.filter(msg => msg.message_id !== messageId));
-
-      // Also refresh from server to stay in sync
-      if (selectedConversation) {
-        const { data: messagesData, error: messagesError } = await supabase.rpc('get_conversation_messages', {
-          conv_id: selectedConversation,
-          limit_count: 50,
-          offset_count: 0
-        });
-        
-        if (!messagesError) {
-          setMessages((messagesData || []).reverse());
-        } else {
-          console.error('Error refreshing messages:', messagesError);
-        }
-      }
+      console.log('Message deleted successfully');
+      // Realtime subscription will handle removing the message from the UI
     } catch (error) {
       console.error('Unexpected error:', error);
       alert('Something went wrong. Please try again.');
@@ -548,7 +721,7 @@ export default function Chat() {
               </div>
 
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
+              <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
                 {isLoadingMessages ? (
                   <div className="flex justify-center py-8">
                     <div className="text-white/60">Loading messages...</div>
@@ -595,6 +768,8 @@ export default function Chat() {
                     </div>
                   ))
                 )}
+                {/* Invisible div to serve as scroll target */}
+                <div ref={messagesEndRef} />
               </div>
 
               {/* Message Input */}
