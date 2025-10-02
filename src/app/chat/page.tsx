@@ -44,6 +44,21 @@ export default function Chat() {
     }
   }, [user, loading, router]);
 
+  // Hide footer on chat page
+  useEffect(() => {
+    const footer = document.querySelector('footer');
+    if (footer) {
+      footer.style.display = 'none';
+    }
+    
+    // Show footer again when component unmounts
+    return () => {
+      if (footer) {
+        footer.style.display = 'block';
+      }
+    };
+  }, []);
+
   useEffect(() => {
     const fetchConversations = async () => {
       if (!user) return;
