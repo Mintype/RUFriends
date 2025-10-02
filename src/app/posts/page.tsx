@@ -365,6 +365,12 @@ export default function Posts() {
                 Posts
               </button>
               <button
+                onClick={() => router.push(`/chat`)}
+                className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Chat
+              </button>
+              <button
                 onClick={() => router.push(`/profile/${user.id}`)}
                 className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
@@ -435,6 +441,15 @@ export default function Posts() {
                 className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
               >
                 Posts
+              </button>
+              <button
+                onClick={() => {
+                  router.push(`/chat`);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Chat
               </button>
               <button
                 onClick={() => {
