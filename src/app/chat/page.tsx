@@ -238,6 +238,7 @@ export default function Chat() {
     if (!selectedConversation || !user) return;
 
     console.log('Setting up realtime subscription for conversation:', selectedConversation);
+    console.log('🔍 Setting up DELETE event listener for filter:', `conversation_id=eq.${selectedConversation}`);
 
     // Subscribe to messages table changes for the current conversation
     const messagesChannel = supabase
@@ -251,50 +252,69 @@ export default function Chat() {
           filter: `conversation_id=eq.${selectedConversation}`
         },
         async (payload) => {
-          console.log('New message received via realtime:', payload);
+          console.log('🔥 New message received via realtime:', payload);
           
-          // Get the message ID from the payload
-          const messageId = payload.new?.id;
-          const senderId = payload.new?.sender_id;
-          if (!messageId) return;
-          
-          // Fetch the complete message data with sender info using the RPC function
-          const { data: messagesData, error } = await supabase.rpc('get_conversation_messages', {
-            conv_id: selectedConversation,
-            limit_count: 50,
-            offset_count: 0
-          });
-          
-          if (!error && messagesData) {
-            // Find the specific message that was just inserted
-            const newMessage = messagesData.find((msg: any) => msg.message_id === messageId);
-            
-            if (newMessage) {
-              console.log('Processing realtime message:', newMessage);
-              
-              setMessages(prevMessages => {
-                // If this is our own message, replace any optimistic message
-                if (senderId === user?.id) {
-                  // Remove any temporary messages and add the real one
-                  const withoutTemp = prevMessages.filter(msg => !msg.message_id.startsWith('temp-'));
-                  // Check if the real message already exists
-                  if (withoutTemp.some(msg => msg.message_id === newMessage.message_id)) {
-                    return withoutTemp;
-                  }
-                  return [...withoutTemp, newMessage];
-                } else {
-                  // For messages from others, just check for duplicates and add
-                  if (prevMessages.some(msg => msg.message_id === newMessage.message_id)) {
-                    console.log('Message already exists, skipping duplicate');
-                    return prevMessages;
-                  }
-                  return [...prevMessages, newMessage];
-                }
-              });
-            }
-          } else {
-            console.error('Error fetching message details:', error);
+          // Extract message data from payload
+          const newMessageData = payload.new;
+          if (!newMessageData?.id) {
+            console.error('❌ Invalid message payload - missing ID:', payload);
+            return;
           }
+          
+          // Get sender info from profiles table
+          let senderName = 'Unknown User';
+          if (newMessageData.sender_id) {
+            try {
+              const { data: senderProfile, error: profileError } = await supabase
+                .from('profiles')
+                .select('display_name')
+                .eq('user_id', newMessageData.sender_id)
+                .single();
+              
+              if (!profileError && senderProfile) {
+                senderName = senderProfile.display_name;
+              } else {
+                console.warn('⚠️ Could not fetch sender profile:', profileError);
+              }
+            } catch (error) {
+              console.warn('⚠️ Error fetching sender profile:', error);
+            }
+          }
+          
+          // Create message object from payload
+          const newMessage: Message = {
+            message_id: newMessageData.id,
+            sender_id: newMessageData.sender_id,
+            sender_name: senderName,
+            content: newMessageData.content,
+            created_at: newMessageData.created_at,
+            is_edited: newMessageData.is_edited || false
+          };
+          
+          console.log('✅ Processing realtime message:', newMessage);
+          
+          setMessages(prevMessages => {
+            // If this is our own message, replace any optimistic message
+            if (newMessageData.sender_id === user?.id) {
+              console.log('📤 Own message received, replacing optimistic message');
+              // Remove any temporary messages and add the real one
+              const withoutTemp = prevMessages.filter(msg => !msg.message_id.startsWith('temp-'));
+              // Check if the real message already exists
+              if (withoutTemp.some(msg => msg.message_id === newMessage.message_id)) {
+                console.log('⚠️ Message already exists, skipping duplicate');
+                return withoutTemp;
+              }
+              return [...withoutTemp, newMessage];
+            } else {
+              console.log('📥 Message from other user received');
+              // For messages from others, just check for duplicates and add
+              if (prevMessages.some(msg => msg.message_id === newMessage.message_id)) {
+                console.log('⚠️ Message already exists, skipping duplicate');
+                return prevMessages;
+              }
+              return [...prevMessages, newMessage];
+            }
+          });
         }
       )
       .on(
@@ -302,20 +322,56 @@ export default function Chat() {
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'messages',
-          filter: `conversation_id=eq.${selectedConversation}`
+          table: 'messages'
         },
         (payload) => {
-          // Remove deleted message from state
-          setMessages(prevMessages => 
-            prevMessages.filter(msg => msg.message_id !== payload.old.id)
-          );
+          console.log('🗑️🗑️🗑️ DELETE EVENT RECEIVED!!! 🗑️🗑️🗑️');
+          console.log('🗑️ payload.old:', payload.old);
+          
+          const deletedMessageId = payload.old?.id;
+          
+          if (!deletedMessageId) {
+            console.error('❌ Invalid delete payload - missing message ID:', payload);
+            return;
+          }
+          
+          console.log('🗑️ Attempting to remove message with ID:', deletedMessageId);
+          
+          // Remove deleted message from state (only if it exists in current conversation)
+          setMessages(prevMessages => {
+            const messageToDelete = prevMessages.find(msg => msg.message_id === deletedMessageId);
+            
+            if (!messageToDelete) {
+              console.log('⚠️ Message not found in current conversation, ignoring DELETE event');
+              return prevMessages;
+            }
+            
+            console.log('🔍 Found message to delete:', messageToDelete.content.substring(0, 50) + '...');
+            
+            const filtered = prevMessages.filter(msg => msg.message_id !== deletedMessageId);
+            console.log('📊 Messages before delete:', prevMessages.length, 'after delete:', filtered.length);
+            console.log('✅ Successfully removed message from UI');
+            
+            return filtered;
+          });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('🔗 Realtime subscription status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ Successfully subscribed to realtime messages');
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ Realtime subscription error');
+        } else if (status === 'TIMED_OUT') {
+          console.error('⏰ Realtime subscription timed out');
+        } else if (status === 'CLOSED') {
+          console.log('🔌 Realtime subscription closed');
+        }
+      });
 
     // Cleanup subscription when conversation changes or component unmounts
     return () => {
+      console.log('🧹 Cleaning up realtime subscription');
       supabase.removeChannel(messagesChannel);
     };
   }, [selectedConversation, user]);
@@ -386,29 +442,68 @@ export default function Chat() {
 
   const deleteMessage = async (messageId: string) => {
     try {
-      console.log('Attempting to delete message:', messageId);
+      console.log('🗑️ Attempting to delete message:', messageId);
+      setContextMenu(null); // Close context menu immediately
+      
+      // Optimistically remove the message from UI
+      setMessages(prevMessages => 
+        prevMessages.map(msg => 
+          msg.message_id === messageId 
+            ? { ...msg, content: 'Deleting...', is_edited: true }
+            : msg
+        )
+      );
+      
+      // First, let's test if the realtime subscription is working by adding a test log
+      console.log('🔍 Current realtime subscription status for conversation:', selectedConversation);
       
       const { data, error } = await supabase
         .from('messages')
         .delete()
         .eq('id', messageId)
-        .eq('sender_id', user?.id); // Extra security check
+        .eq('sender_id', user?.id) // Extra security check
+        .select(); // Add select() to get the deleted row data back
       
-      console.log('Delete result:', { data, error });
+      console.log('🗑️ Delete result:', { data, error });
+      console.log('🗑️ Deleted row data:', data);
       
       if (error) {
-        console.error('Error deleting message:', error);
+        console.error('❌ Error deleting message:', error);
+        
+        // Restore the original message on error
+        setMessages(prevMessages => {
+          // We need to refetch the message content since we modified it
+          // For now, just remove the "Deleting..." state and let realtime handle it
+          return prevMessages.filter(msg => msg.message_id !== messageId);
+        });
+        
         alert('Failed to delete message. Please try again.');
         return;
       }
 
-      console.log('Message deleted successfully');
-      // Realtime subscription will handle removing the message from the UI
+      console.log('✅ Message deleted successfully from database');
+      
+      // Add a timeout to check if realtime DELETE event was received
+      setTimeout(() => {
+        setMessages(prevMessages => {
+          const messageStillExists = prevMessages.some(msg => msg.message_id === messageId);
+          if (messageStillExists) {
+            console.warn('⚠️ Realtime DELETE event not received, manually removing message from UI');
+            return prevMessages.filter(msg => msg.message_id !== messageId);
+          }
+          return prevMessages;
+        });
+      }, 2000); // Wait 2 seconds for realtime event
+      
     } catch (error) {
-      console.error('Unexpected error:', error);
+      console.error('❌ Unexpected error:', error);
+      
+      // Restore message on unexpected error
+      setMessages(prevMessages => 
+        prevMessages.filter(msg => msg.message_id !== messageId)
+      );
+      
       alert('Something went wrong. Please try again.');
-    } finally {
-      setContextMenu(null);
     }
   };
 
@@ -724,7 +819,7 @@ export default function Chat() {
               <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
                 {isLoadingMessages ? (
                   <div className="flex justify-center py-8">
-                    <div className="text-white/60">Loading messages...</div>
+                    {/* <div className="text-white/60">Loading messages...</div> */}
                   </div>
                 ) : messages.length === 0 ? (
                   <div className="text-center py-8">

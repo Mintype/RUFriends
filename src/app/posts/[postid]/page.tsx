@@ -776,32 +776,45 @@ export default function PostDetail() {
         </div>
 
         {/* Reply Form */}
-        <div className="bg-white/10 backdrop-blur-md rounded-lg p-6 border border-white/20 mb-8">
-          <h2 className="text-xl font-semibold text-white mb-4">Add a Reply</h2>
+        <div className="bg-gradient-to-r from-white/5 to-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/20 mb-8 shadow-lg">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-semibold text-sm shadow-md">
+              {userProfile?.display_name ? userProfile.display_name.charAt(0).toUpperCase() : user?.email?.charAt(0).toUpperCase() || '?'}
+            </div>
+            <h2 className="text-lg font-semibold text-white">Join the conversation</h2>
+          </div>
           
           <div className="space-y-4">
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <label className="block text-sm font-medium text-white">Your Reply</label>
-                <span className={`text-xs ${newReplyContent.length > 500 ? 'text-red-400' : 'text-white/50'}`}>
-                  {newReplyContent.length}/500
-                </span>
-              </div>
+            <div className="relative">
               <textarea
                 value={newReplyContent}
                 onChange={(e) => setNewReplyContent(e.target.value.slice(0, 500))}
-                placeholder="Write your reply..."
-                rows={3}
+                placeholder="Share your thoughts..."
+                rows={4}
                 maxLength={500}
-                className={`w-full px-4 py-2 bg-white/10 border rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 resize-none ${
+                className={`w-full px-4 py-3 bg-white/8 border rounded-2xl text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-red-400/50 focus:border-red-400/50 resize-none transition-all ${
                   newReplyContent.length > 500 
                     ? 'border-red-400 focus:ring-red-500' 
-                    : 'border-white/20 focus:ring-red-500'
+                    : 'border-white/20 hover:border-white/30'
                 }`}
               />
+              <div className="absolute bottom-3 right-3">
+                <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                  newReplyContent.length > 500 
+                    ? 'text-red-400 bg-red-500/20' 
+                    : newReplyContent.length > 400 
+                      ? 'text-yellow-400 bg-yellow-500/20' 
+                      : 'text-white/50 bg-white/5'
+                }`}>
+                  {newReplyContent.length}/500
+                </span>
+              </div>
             </div>
             
-            <div className="flex space-x-3">
+            <div className="flex items-center justify-between">
+              <div className="text-white/60 text-sm">
+                Be respectful and constructive in your discussion
+              </div>
               <button
                 onClick={createReply}
                 disabled={
@@ -809,19 +822,31 @@ export default function PostDetail() {
                   !newReplyContent.trim() ||
                   newReplyContent.length > 500
                 }
-                className="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-6 py-2 rounded-lg font-medium transition-colors"
+                className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:from-gray-500 disabled:to-gray-600 disabled:cursor-not-allowed text-white px-8 py-2.5 rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
               >
-                {isCreatingReply ? 'Posting...' : 'Reply'}
+                {isCreatingReply ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span>Posting...</span>
+                  </div>
+                ) : (
+                  'Post Reply'
+                )}
               </button>
             </div>
           </div>
         </div>
 
         {/* Replies */}
-        <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-white">
-            Replies ({totalRepliesCount})
-          </h2>
+        <div className="space-y-6">
+          <div className="flex items-center space-x-3">
+            <h2 className="text-xl font-semibold text-white">
+              Discussion
+            </h2>
+            <div className="bg-red-500/20 text-red-300 px-3 py-1 rounded-full text-sm font-medium">
+              {totalRepliesCount} {totalRepliesCount === 1 ? 'reply' : 'replies'}
+            </div>
+          </div>
           
           {repliesLoading ? (
             <div className="text-center text-white py-8">
@@ -829,116 +854,144 @@ export default function PostDetail() {
               <p className="mt-2">Loading replies...</p>
             </div>
           ) : replies.length === 0 ? (
-            <div className="text-center text-white/70 py-8">
-              <p>No replies yet. Be the first to reply!</p>
+            <div className="text-center py-12">
+              <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <p className="text-white/70 text-lg mb-2">No replies yet</p>
+              <p className="text-white/50 text-sm">Start the conversation by sharing your thoughts above</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-6">
               {replies.map((reply) => (
-                <div key={reply.id} className="bg-white/5 backdrop-blur-md rounded-lg p-4 border border-white/10">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <button
-                        onClick={() => router.push(`/profile/${reply.user_id}`)}
-                        className="text-white font-medium hover:text-red-400 transition-colors cursor-pointer"
-                      >
-                        {reply.username}
-                      </button>
-                      <span className="text-white/50 text-sm">
-                        {new Date(reply.created_at).toLocaleDateString()} at {new Date(reply.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                <div key={reply.id} className="group">
+                  <div className="flex space-x-4">
+                    {/* Avatar */}
+                    <div className="flex-shrink-0">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center text-white font-semibold text-sm shadow-lg">
+                        {reply.username ? reply.username.charAt(0).toUpperCase() : '?'}
+                      </div>
                     </div>
                     
-                    {/* Edit and Delete buttons - only show if user owns the reply */}
-                    {user && reply.user_id === user.id && editingReplyId !== reply.id && (
-                      <div className="flex space-x-2">
+                    {/* Comment Content */}
+                    <div className="flex-1 min-w-0">
+                      {/* Header */}
+                      <div className="flex items-center space-x-2 mb-2">
                         <button
-                          onClick={() => startEditingReply(reply)}
-                          className="flex items-center space-x-1 text-white/50 hover:text-white px-2 py-1 rounded hover:bg-white/10 transition-colors"
+                          onClick={() => router.push(`/profile/${reply.user_id}`)}
+                          className="text-white font-semibold hover:text-red-300 transition-colors text-sm"
                         >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                          <span className="text-xs">Edit</span>
+                          {reply.username}
                         </button>
-                        <button
-                          onClick={() => deleteReply(reply.id)}
-                          disabled={isDeletingReply}
-                          className="flex items-center space-x-1 text-red-400 hover:text-red-300 px-2 py-1 rounded hover:bg-red-500/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          <span className="text-xs">{isDeletingReply ? 'Deleting...' : 'Delete'}</span>
-                        </button>
+                        <span className="text-white/40 text-xs">•</span>
+                        <span className="text-white/60 text-xs">
+                          {new Date(reply.created_at).toLocaleDateString()} at {new Date(reply.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
                       </div>
-                    )}
-                  </div>
-                  
-                  {editingReplyId === reply.id ? (
-                    // Edit mode
-                    <div className="space-y-3">
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <label className="block text-xs font-medium text-white">Edit Reply</label>
-                          <span className={`text-xs ${editReplyContent.length > 500 ? 'text-red-400' : 'text-white/50'}`}>
-                            {editReplyContent.length}/500
-                          </span>
+                      
+                      {/* Comment Body */}
+                      <div className="bg-white/8 rounded-2xl rounded-tl-sm px-4 py-3 border border-white/10 group-hover:bg-white/10 transition-colors">
+                        {editingReplyId === reply.id ? (
+                          // Edit mode
+                          <div className="space-y-3">
+                            <div>
+                              <div className="flex justify-between items-center mb-2">
+                                <label className="block text-xs font-medium text-white/80">Edit Reply</label>
+                                <span className={`text-xs ${editReplyContent.length > 500 ? 'text-red-400' : 'text-white/50'}`}>
+                                  {editReplyContent.length}/500
+                                </span>
+                              </div>
+                              <textarea
+                                value={editReplyContent}
+                                onChange={(e) => setEditReplyContent(e.target.value.slice(0, 500))}
+                                rows={3}
+                                maxLength={500}
+                                className={`w-full px-3 py-2 bg-white/10 border rounded-xl text-white placeholder-white/50 focus:outline-none focus:ring-2 resize-none text-sm ${
+                                  editReplyContent.length > 500 
+                                    ? 'border-red-400 focus:ring-red-500' 
+                                    : 'border-white/20 focus:ring-red-400'
+                                }`}
+                              />
+                            </div>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => updateReply(reply.id)}
+                                disabled={
+                                  isUpdatingReply || 
+                                  !editReplyContent.trim() ||
+                                  editReplyContent.length > 500
+                                }
+                                className="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-md"
+                              >
+                                {isUpdatingReply ? 'Saving...' : 'Save'}
+                              </button>
+                              <button
+                                onClick={cancelEditingReply}
+                                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          // Display mode
+                          <div className="text-white/95 text-sm leading-relaxed whitespace-pre-wrap">
+                            {reply.content}
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Action buttons - only show if user owns the reply */}
+                      {user && reply.user_id === user.id && editingReplyId !== reply.id && (
+                        <div className="flex space-x-1 mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => startEditingReply(reply)}
+                            className="flex items-center space-x-1 text-white/50 hover:text-white/80 px-2 py-1 rounded-lg hover:bg-white/5 transition-all text-xs"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            <span>Edit</span>
+                          </button>
+                          <button
+                            onClick={() => deleteReply(reply.id)}
+                            disabled={isDeletingReply}
+                            className="flex items-center space-x-1 text-red-400/70 hover:text-red-400 px-2 py-1 rounded-lg hover:bg-red-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>{isDeletingReply ? 'Deleting...' : 'Delete'}</span>
+                          </button>
                         </div>
-                        <textarea
-                          value={editReplyContent}
-                          onChange={(e) => setEditReplyContent(e.target.value.slice(0, 500))}
-                          rows={3}
-                          maxLength={500}
-                          className={`w-full px-3 py-2 bg-white/10 border rounded text-white placeholder-white/50 focus:outline-none focus:ring-2 resize-none text-sm ${
-                            editReplyContent.length > 500 
-                              ? 'border-red-400 focus:ring-red-500' 
-                              : 'border-white/20 focus:ring-red-500'
-                          }`}
-                        />
-                      </div>
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => updateReply(reply.id)}
-                          disabled={
-                            isUpdatingReply || 
-                            !editReplyContent.trim() ||
-                            editReplyContent.length > 500
-                          }
-                          className="bg-red-500 hover:bg-red-600 disabled:bg-gray-500 disabled:cursor-not-allowed text-white px-4 py-1 rounded text-sm font-medium transition-colors"
-                        >
-                          {isUpdatingReply ? 'Saving...' : 'Save'}
-                        </button>
-                        <button
-                          onClick={cancelEditingReply}
-                          className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-1 rounded text-sm font-medium transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
+                      )}
                     </div>
-                  ) : (
-                    // Display mode
-                    <div className="text-white/90 whitespace-pre-wrap">{reply.content}</div>
-                  )}
+                  </div>
                 </div>
               ))}
               
               {/* Load More Button */}
               {hasMoreReplies && (
-                <div className="text-center pt-4">
+                <div className="text-center pt-6">
                   <button
                     onClick={loadMoreReplies}
                     disabled={loadingMoreReplies}
-                    className="bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg font-medium transition-colors border border-white/20"
+                    className="group bg-white/10 hover:bg-white/15 disabled:bg-white/5 disabled:cursor-not-allowed text-white px-8 py-3 rounded-2xl font-medium transition-all duration-300 border border-white/20 hover:border-white/30 shadow-lg hover:shadow-xl transform hover:scale-105 disabled:transform-none"
                   >
                     {loadingMoreReplies ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <div className="flex items-center space-x-3">
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                         <span>Loading more replies...</span>
                       </div>
                     ) : (
-                      'Load More Replies'
+                      <div className="flex items-center space-x-2">
+                        <span>Load More Replies</span>
+                        <svg className="w-4 h-4 transition-transform group-hover:translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                        </svg>
+                      </div>
                     )}
                   </button>
                 </div>
