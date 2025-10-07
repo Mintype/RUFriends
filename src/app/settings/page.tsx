@@ -46,6 +46,16 @@ export default function Settings() {
   const [justSaved, setJustSaved] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
+  // Blocked users state
+  interface BlockedUser {
+    block_id: string;
+    blocked_user_id: string;
+    blocked_user_name: string;
+    blocked_at: string;
+  }
+  const [blockedUsers, setBlockedUsers] = useState<BlockedUser[]>([]);
+  const [isLoadingBlocked, setIsLoadingBlocked] = useState(true);
+  
   // Form input states for arrays
   const [newClass, setNewClass] = useState('');
   const [newInterest, setNewInterest] = useState('');
@@ -88,6 +98,24 @@ export default function Settings() {
     }
   }, [user]);
 
+  const fetchBlockedUsers = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase.rpc('get_blocked_users');
+
+      if (error) {
+        console.error('Error fetching blocked users:', error);
+      } else if (data) {
+        setBlockedUsers(data);
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
+    } finally {
+      setIsLoadingBlocked(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/');
@@ -96,8 +124,9 @@ export default function Settings() {
 
     if (user) {
       fetchProfile();
+      fetchBlockedUsers();
     }
-  }, [user, authLoading, router, fetchProfile]);
+  }, [user, authLoading, router, fetchProfile, fetchBlockedUsers]);
 
   const handleInputChange = (field: keyof ProfileFormData, value: string | number | string[]) => {
     setProfile(prev => ({
@@ -244,6 +273,27 @@ export default function Settings() {
   const handleSignOut = async () => {
     await signOut();
     router.push('/');
+  };
+
+  const unblockUser = async (userId: string) => {
+    try {
+      const { error } = await supabase.rpc('unblock_user', {
+        user_to_unblock: userId
+      });
+
+      if (error) {
+        console.error('Error unblocking user:', error);
+        alert('Failed to unblock user. Please try again.');
+        return;
+      }
+
+      // Remove from local state
+      setBlockedUsers(prev => prev.filter(user => user.blocked_user_id !== userId));
+      alert('User unblocked successfully');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to unblock user. Please try again.');
+    }
   };
 
   if (authLoading || isLoading) {
@@ -664,6 +714,49 @@ export default function Settings() {
                   </div>
                 ))}
               </div>
+            </div>
+
+            {/* Blocked Users Section */}
+            <div>
+              <label className="block text-sm font-medium text-white mb-4">
+                Blocked Users
+              </label>
+              {isLoadingBlocked ? (
+                <div className="text-white/60 text-sm">Loading blocked users...</div>
+              ) : blockedUsers.length === 0 ? (
+                <div className="text-white/60 text-sm">You haven&apos;t blocked any users.</div>
+              ) : (
+                <div className="space-y-2">
+                  {blockedUsers.map((blockedUser) => (
+                    <div
+                      key={blockedUser.block_id}
+                      className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-lg"
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-red-500 to-pink-600 rounded-full flex items-center justify-center flex-shrink-0">
+                          <span className="text-white font-semibold text-sm">
+                            {blockedUser.blocked_user_name ? blockedUser.blocked_user_name.charAt(0).toUpperCase() : '?'}
+                          </span>
+                        </div>
+                        <div>
+                          <div className="text-white font-medium text-sm">
+                            {blockedUser.blocked_user_name}
+                          </div>
+                          <div className="text-white/50 text-xs">
+                            Blocked on {new Date(blockedUser.blocked_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => unblockUser(blockedUser.blocked_user_id)}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm rounded-lg transition-colors"
+                      >
+                        Unblock
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Save Button */}

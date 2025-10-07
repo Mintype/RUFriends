@@ -38,6 +38,8 @@ function ChatContent() {
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
+  const [conversationContextMenu, setConversationContextMenu] = useState<{ x: number; y: number; conversationId: string; otherUserId: string } | null>(null);
+  const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   
   // Ref for the messages container to enable auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -108,14 +110,18 @@ function ChatContent() {
 
   // Close context menu on click outside or escape
   useEffect(() => {
-    const handleGlobalClick = () => handleClickOutside();
+    const handleGlobalClick = () => {
+      handleClickOutside();
+      setConversationContextMenu(null);
+    };
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setContextMenu(null);
+        setConversationContextMenu(null);
       }
     };
 
-    if (contextMenu) {
+    if (contextMenu || conversationContextMenu) {
       document.addEventListener('click', handleGlobalClick);
       document.addEventListener('keydown', handleEscape);
     }
@@ -124,7 +130,7 @@ function ChatContent() {
       document.removeEventListener('click', handleGlobalClick);
       document.removeEventListener('keydown', handleEscape);
     };
-  }, [contextMenu]);
+  }, [contextMenu, conversationContextMenu]);
 
   useEffect(() => {
     const fetchConversations = async () => {
@@ -512,6 +518,135 @@ function ChatContent() {
     setContextMenu(null);
   };
 
+  // Handle right-click on conversation
+  const handleConversationRightClick = (e: React.MouseEvent, conversationId: string, otherUserId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setConversationContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      conversationId,
+      otherUserId
+    });
+  };
+
+  // Check if a user is blocked
+  const checkIfBlocked = async (userId: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('is_user_blocked', {
+        user_to_check: userId
+      });
+      
+      if (error) {
+        console.error('Error checking block status:', error);
+        return false;
+      }
+      
+      return data || false;
+    } catch (error) {
+      console.error('Error:', error);
+      return false;
+    }
+  };
+
+  // Load blocked users on mount
+  useEffect(() => {
+    const loadBlockedUsers = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase.rpc('get_blocked_users');
+        
+        if (error) {
+          console.error('Error loading blocked users:', error);
+          return;
+        }
+        
+        const blocked = new Set<string>(
+          data?.map((b: { blocked_user_id: string; blocked_user_name: string; blocked_at: string; block_id: string }) => b.blocked_user_id) || []
+        );
+        setBlockedUsers(blocked);
+      } catch (error) {
+        console.error('Error:', error);
+      }
+    };
+    
+    if (user) {
+      loadBlockedUsers();
+    }
+  }, [user]);
+
+  // Block a user
+  const blockUser = async (userId: string) => {
+    try {
+      setConversationContextMenu(null);
+      
+      const { data, error } = await supabase.rpc('block_user', {
+        user_to_block: userId
+      });
+      
+      if (error) {
+        console.error('Error blocking user:', error);
+        alert('Failed to block user. Please try again.');
+        return;
+      }
+      
+      // Update blocked users set
+      setBlockedUsers(prev => new Set([...prev, userId]));
+      
+      // Refresh conversations to remove the blocked user's conversation
+      const { data: convData, error: convError } = await supabase.rpc('get_user_conversations');
+      if (!convError && convData) {
+        setConversations(convData);
+        
+        // If the blocked user's conversation was selected, deselect it
+        if (selectedConversation && conversations.find(c => c.conversation_id === selectedConversation)?.other_user_id === userId) {
+          setSelectedConversation(null);
+        }
+      }
+      
+      alert('User blocked successfully');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to block user. Please try again.');
+    }
+  };
+
+  // Unblock a user
+  const unblockUser = async (userId: string) => {
+    try {
+      setConversationContextMenu(null);
+      
+      const { data, error } = await supabase.rpc('unblock_user', {
+        user_to_unblock: userId
+      });
+      
+      if (error) {
+        console.error('Error unblocking user:', error);
+        alert('Failed to unblock user. Please try again.');
+        return;
+      }
+      
+      // Update blocked users set
+      setBlockedUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+      
+      // Refresh conversations to show the unblocked user's conversation
+      const { data: convData, error: convError } = await supabase.rpc('get_user_conversations');
+      if (!convError && convData) {
+        setConversations(convData);
+      }
+      
+      alert('User unblocked successfully');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Failed to unblock user. Please try again.');
+    }
+  };
+
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -750,6 +885,7 @@ function ChatContent() {
                   <button
                     key={conversation.conversation_id}
                     onClick={() => setSelectedConversation(conversation.conversation_id)}
+                    onContextMenu={(e) => handleConversationRightClick(e, conversation.conversation_id, conversation.other_user_id)}
                     className={`w-full p-4 hover:bg-white/5 rounded-lg transition-colors text-left group mb-2 ${
                       selectedConversation === conversation.conversation_id ? 'bg-white/10 border border-white/20' : ''
                     }`}
@@ -947,6 +1083,39 @@ function ChatContent() {
             </svg>
             <span>Delete Message</span>
           </button>
+        </div>
+      )}
+
+      {/* Conversation Context Menu */}
+      {conversationContextMenu && (
+        <div 
+          className="fixed bg-black/90 backdrop-blur-sm border border-white/20 rounded-lg shadow-xl z-50 py-2 min-w-40"
+          style={{ 
+            left: conversationContextMenu.x, 
+            top: conversationContextMenu.y,
+          }}
+        >
+          {blockedUsers.has(conversationContextMenu.otherUserId) ? (
+            <button
+              onClick={() => unblockUser(conversationContextMenu.otherUserId)}
+              className="w-full px-4 py-2 text-left text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors text-sm flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+              </svg>
+              <span>Unblock User</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => blockUser(conversationContextMenu.otherUserId)}
+              className="w-full px-4 py-2 text-left text-red-400 hover:bg-red-500/20 hover:text-red-300 transition-colors text-sm flex items-center space-x-2"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+              </svg>
+              <span>Block User</span>
+            </button>
+          )}
         </div>
       )}
 
