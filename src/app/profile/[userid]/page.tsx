@@ -36,6 +36,8 @@ export default function UserProfile() {
   const [isLoading, setIsLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [isStartingChat, setIsStartingChat] = useState(false);
+
 
   const isOwnProfile = user?.id === userId;
 
@@ -101,6 +103,67 @@ export default function UserProfile() {
       }, 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
+    }
+  };
+
+  const handleStartChat = async () => {
+    console.log('handleStartChat: Starting chat process', { userId, currentUserId: user?.id });
+    
+    if (!user) {
+      console.warn('handleStartChat: No authenticated user found');
+      return;
+    }
+    
+    if (isOwnProfile || user.id === userId) {
+      console.warn('handleStartChat: Cannot start chat with self', { isOwnProfile, userId, currentUserId: user.id });
+      return;
+    }
+    
+    if (isStartingChat) {
+      console.log('handleStartChat: Already starting chat, ignoring duplicate request');
+      return;
+    }
+    
+    setIsStartingChat(true);
+    
+    try {
+      console.log('handleStartChat: Calling get_or_create_conversation function', { otherUserId: userId });
+      
+      // Call the database function to create or get existing conversation
+      const { data: conversationId, error } = await supabase
+        .rpc('get_or_create_conversation', { 
+          other_user_id: userId 
+        });
+      
+      if (error) {
+        console.error('handleStartChat: Error creating/getting conversation:', error);
+        console.error('handleStartChat: Error details:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code
+        });
+        // Show user-friendly error message
+        alert('Unable to start conversation. Please try again.');
+        return;
+      }
+      
+      if (!conversationId) {
+        console.error('handleStartChat: No conversation ID returned from function');
+        alert('Unable to create conversation. Please try again.');
+        return;
+      }
+      
+      console.log('handleStartChat: Successfully got/created conversation', { conversationId });
+      
+      // Navigate to chat page with the conversation ID
+      router.push(`/chat?conversation=${conversationId}`);
+      
+    } catch (error) {
+      console.error('handleStartChat: Unexpected error:', error);
+      alert('Something went wrong. Please try again.');
+    } finally {
+      setIsStartingChat(false);
     }
   };
 
@@ -188,6 +251,12 @@ export default function UserProfile() {
                 Posts
               </button>
               <button
+                onClick={() => router.push(`/chat`)}
+                className="text-white/70 hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Chat
+              </button>
+              <button
                 onClick={() => router.push(`/profile/${user.id}`)}
                 className="text-white hover:text-white px-3 py-2 rounded-lg hover:bg-white/10 transition-colors"
               >
@@ -261,6 +330,15 @@ export default function UserProfile() {
               </button>
               <button
                 onClick={() => {
+                  router.push(`/chat`);
+                  setMobileMenuOpen(false);
+                }}
+                className="block w-full text-left text-white/70 hover:text-white px-4 py-3 rounded-lg hover:bg-white/10 transition-colors"
+              >
+                Chat
+              </button>
+              <button
+                onClick={() => {
                   router.push(`/profile/${user.id}`);
                   setMobileMenuOpen(false);
                 }}
@@ -321,7 +399,7 @@ export default function UserProfile() {
                   </div>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                  {isOwnProfile && (
+                  {isOwnProfile || user?.id === userId ? (
                     <button
                       onClick={() => router.push('/settings')}
                       className="inline-flex items-center justify-center px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors font-medium text-sm"
@@ -330,6 +408,29 @@ export default function UserProfile() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
                       Edit Profile
+                    </button>
+                  ) : (
+                    <button
+                      onClick={handleStartChat}
+                      disabled={!user || !userId || user.id === userId || isStartingChat}
+                      className="inline-flex items-center justify-center px-4 py-2 bg-red-500 hover:bg-red-600 disabled:bg-red-400 text-white rounded-lg transition-colors font-medium text-sm"
+                    >
+                      {isStartingChat ? (
+                        <>
+                          <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Starting Chat...
+                        </>
+                      ) : (
+                        <>
+                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                          </svg>
+                          Say Hi
+                        </>
+                      )}
                     </button>
                   )}
                   <div className="text-white/40 text-sm sm:text-right">
