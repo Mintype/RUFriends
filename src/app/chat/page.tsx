@@ -40,6 +40,7 @@ function ChatContent() {
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; messageId: string } | null>(null);
   const [conversationContextMenu, setConversationContextMenu] = useState<{ x: number; y: number; conversationId: string; otherUserId: string } | null>(null);
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
+  const [showInfoNote, setShowInfoNote] = useState(true);
   
   // Ref for the messages container to enable auto-scroll
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -98,6 +99,12 @@ function ChatContent() {
     const footer = document.querySelector('footer');
     if (footer) {
       footer.style.display = 'none';
+    }
+    
+    // Check if user has dismissed the info note
+    const infoDismissed = localStorage.getItem('chatInfoNoteDismissed');
+    if (infoDismissed === 'true') {
+      setShowInfoNote(false);
     }
     
     // Show footer again when component unmounts
@@ -670,6 +677,11 @@ function ChatContent() {
     return name ? name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2) : '?';
   };
 
+  const dismissInfoNote = () => {
+    setShowInfoNote(false);
+    localStorage.setItem('chatInfoNoteDismissed', 'true');
+  };
+
   if (loading || conversationsLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-red-900 to-slate-900 flex items-center justify-center">
@@ -950,6 +962,31 @@ function ChatContent() {
                   </button>
                 </div>
               </div>
+
+              {/* Info Note */}
+              {showInfoNote && (
+                <div className="mx-6 mt-4 p-4 bg-blue-500/20 border border-blue-400/30 rounded-lg flex items-start space-x-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-white/90 leading-relaxed">
+                      <span className="font-medium">Tip:</span> Right-click on your messages to delete them, or right-click on a conversation in the sidebar to block/unblock users.
+                    </p>
+                  </div>
+                  <button
+                    onClick={dismissInfoNote}
+                    className="flex-shrink-0 text-white/60 hover:text-white transition-colors"
+                    title="Dismiss"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
 
               {/* Messages */}
               <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-6 space-y-4 min-h-0">
