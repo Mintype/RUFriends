@@ -46,6 +46,7 @@ export default function Browse() {
     graduationYear: '',
     interests: ''
   });
+  const [hideEmptyProfiles, setHideEmptyProfiles] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -60,6 +61,12 @@ export default function Browse() {
     setCurrentPage(1);
     fetchProfiles(true);
   }, [filters]);
+
+  useEffect(() => {
+    // Update when hideEmptyProfiles toggle changes
+    setCurrentPage(1);
+    fetchProfiles(true);
+  }, [hideEmptyProfiles]);
 
   const fetchProfiles = async (resetPage: boolean = false) => {
     if (!user) return;
@@ -120,6 +127,11 @@ export default function Browse() {
         }
       }
 
+      if (hideEmptyProfiles) {
+        // Profile must have at least one of: bio, major, campus (non-empty text), or classes/interests (non-empty array)
+        query = query.or('bio.neq.,major.neq.,campus.neq.,classes.neq.{},interests.neq.{}');
+      }
+
       // Apply pagination and ordering
       query = query
         .range(from, to)
@@ -134,17 +146,20 @@ export default function Browse() {
         return;
       }
 
+      // Empty profile filtering is now done server-side, so we use the data directly
+      const profiles = data || [];
+
       if (resetPage) {
-        setProfiles(data || []);
+        setProfiles(profiles);
         setCurrentPage(1);
       } else {
         // Append for pagination (if implementing infinite scroll later)
-        setProfiles(prev => [...prev, ...(data || [])]);
+        setProfiles(prev => [...prev, ...profiles]);
       }
       
       setTotalCount(count || 0);
-      setHasMore((data?.length || 0) === profilesPerPage);
-      setFilteredProfiles(data || []); // Since filtering is done server-side
+      setHasMore(profiles.length === profilesPerPage);
+      setFilteredProfiles(profiles);
       
     } catch (error) {
       console.error('Error fetching profiles:', error);
@@ -425,7 +440,7 @@ export default function Browse() {
           </div>
 
           {/* Results Count and Pagination Info */}
-          <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <div className="mt-4 pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <p className="text-white/60 text-sm">
               Showing {filteredProfiles.length} of {totalCount} students
               {(filters.searchTerm || filters.campus || filters.major || filters.graduationYear || filters.interests) && (
@@ -434,6 +449,17 @@ export default function Browse() {
                 </span>
               )}
             </p>
+            <div className="flex items-center space-x-3">
+              <label className="flex items-center space-x-2 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={hideEmptyProfiles}
+                  onChange={(e) => setHideEmptyProfiles(e.target.checked)}
+                  className="w-4 h-4 rounded bg-white/10 border border-white/20 cursor-pointer accent-red-500 hover:bg-white/20 hover:border-white/40 transition-colors"
+                />
+                <span className="text-white/70 text-sm group-hover:text-white transition-colors">Hide empty profiles</span>
+              </label>
+            </div>
             {totalCount > profilesPerPage && (
               <div className="text-white/60 text-sm">
                 Page {currentPage} of {Math.ceil(totalCount / profilesPerPage)}
