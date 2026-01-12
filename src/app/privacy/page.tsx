@@ -240,7 +240,7 @@ export default function PrivacyPolicy() {
                       </div>
                       <div className="flex items-center space-x-3">
                         <span className="text-red-400">⏰</span>
-                        <span className="text-red-300">We respond to privacy requests within 7 days</span>
+                        <span className="text-red-300">I respond to privacy requests within 7 days</span>
                       </div>
                     </div>
                   </div>
